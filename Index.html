@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+  <title>Pix vs The World</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+  <style>
+
+    body{
+  background:
+    radial-gradient(circle at center,#1a1a1a,#050505);
+
+  color:white;
+
+  text-align:center;
+
+  font-family:Arial;
+
+  padding-top:40px;
+
+  overflow:hidden;
+}
+
+h1{
+
+  font-size:60px;
+
+  color:#00ffe1;
+
+  text-shadow:
+    0 0 10px #00ffe1,
+    0 0 20px #00ffe1;
+
+  margin-bottom:10px;
+
+}
+
+#pixState{
+
+  color:#ff2975;
+
+  text-shadow:
+    0 0 10px #ff2975;
+
+}
+
+#barContainer{
+
+  width:80%;
+  height:40px;
+
+  background:#111;
+
+  margin:20px auto;
+
+  border-radius:20px;
+
+  overflow:hidden;
+
+  border:2px solid #333;
+
+}
+
+#bar{
+
+  height:100%;
+  width:50%;
+
+  background:#00ff88;
+
+  transition:0.5s;
+
+  box-shadow:
+    0 0 20px #00ff88;
+
+}
+
+#timer{
+
+  margin-top:20px;
+
+  color:#aaa;
+
+}
+
+#pixelContainer{
+
+  display:flex;
+
+  justify-content:center;
+
+  align-items:center;
+
+  margin-top:50px;
+
+}
+
+#pixel{
+
+  width:140px;
+  height:140px;
+
+  background:
+    linear-gradient(145deg,#ffffff,#cfcfcf);
+
+  border-radius:18px;
+
+  position:relative;
+
+  cursor:pointer;
+
+  transition:
+    transform 0.08s,
+    box-shadow 0.2s,
+    filter 0.2s;
+
+  box-shadow:
+    0 0 20px #00ffe1,
+    0 0 40px rgba(0,255,225,0.5);
+
+}
+
+/* visage Pix */
+
+#pixel::before,
+#pixel::after{
+
+  content:"";
+
+  position:absolute;
+
+  width:18px;
+  height:18px;
+
+  background:#111;
+
+  border-radius:50%;
+
+  top:42px;
+
+}
+
+#pixel::before{
+  left:38px;
+}
+
+#pixel::after{
+  right:38px;
+}
+
+/* bouche */
+
+#pixel .mouth{
+
+  position:absolute;
+
+  width:40px;
+  height:8px;
+
+  background:#111;
+
+  border-radius:10px;
+
+  bottom:35px;
+
+  left:50%;
+
+  transform:translateX(-50%);
+
+}
+
+/* effet hover */
+
+#pixel:hover{
+
+  transform:scale(1.05);
+
+}
+
+/* choc clic */
+
+#pixel.hit{
+
+  transform:scale(0.88);
+
+  filter:brightness(1.4);
+
+}
+
+/* surcharge */
+
+#pixel.overheat{
+
+  animation:glitch 0.15s infinite;
+
+  box-shadow:
+    0 0 20px red,
+    0 0 50px red;
+
+}
+
+/* cooldown */
+
+#pixel.cooldown{
+
+  opacity:0.35;
+
+  transform:scale(0.8);
+
+  filter:grayscale(1);
+
+  cursor:not-allowed;
+
+}
+
+/* animation glitch */
+
+@keyframes glitch{
+
+  0%{
+    transform:translate(0px,0px);
+  }
+
+  25%{
+    transform:translate(-3px,2px);
+  }
+
+  50%{
+    transform:translate(3px,-2px);
+  }
+
+  75%{
+    transform:translate(-2px,-2px);
+  }
+
+  100%{
+    transform:translate(0px,0px);
+  }
+
+}
+
+#gameMessage{
+
+  margin-top:30px;
+
+  font-size:40px;
+
+  color:gold;
+
+}
+#intro{
+
+  color:#999;
+
+  margin-top:-10px;
+
+  line-height:1.6;
+
+}
+
+#contribution{
+
+  color:#00ffe1;
+
+  margin-top:20px;
+
+  text-shadow:
+    0 0 10px #00ffe1;
+
+}
+@media(max-width:700px){
+
+  h1{
+    font-size:38px;
+  }
+
+  #pixel{
+
+    width:100px;
+    height:100px;
+
+  }
+
+  #barContainer{
+    width:95%;
+  }
+
+  body{
+    padding:20px;
+  }
+
+  #timer{
+    font-size:22px;
+  }
+
+}
+*{
+  user-select:none;
+  -webkit-user-select:none;
+}
+  </style>
+
+</head>
+
+<body>
+
+<h1>Pix vs The World</h1>
+<p id="intro">
+  Le monde a 30 jours pour battre Pix.<br>
+  Chaque clic compte.<br>
+  Pix évolue. Pix s’adapte. Pix contre-attaque.
+</p>
+
+<h2 id="pixState">Pix est calme</h2>
+
+<h2>World : <span id="world">0</span></h2>
+<h2>Pix : <span id="pix">0</span></h2>
+
+<h2 id="percent">0%</h2>
+
+<h3 id="contribution">
+  Votre contribution : 0 clic
+</h3>
+
+<div id="barContainer">
+  <div id="bar"></div>
+</div>
+
+<h2 id="timer">00j 00h 00m 00s</h2>
+
+<div id="pixelContainer">
+
+  <div id="pixel">
+
+    <div class="mouth"></div>
+
+  </div>
+
+</div>
+
+<div id="gameMessage"></div>
+
+<script>
+
+const SUPABASE_URL = "https://tijjbqrjeagbeepfjtbf.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpampicXJqZWFnYmVlcGZqdGJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5OTAwNzQsImV4cCI6MjA5MzU2NjA3NH0.gnkTBKQkxHXdzQikzBRvpIXDJvfWsaHt5BMeB0zJgqw";
+
+const client = supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+let gameEnded = false;
+
+let localClicks =
+  localStorage.getItem("pix_clicks") || 0;
+
+updateContribution();
+
+function updateContribution(){
+
+  document.getElementById("contribution")
+    .innerText =
+    "Votre contribution : " +
+    localClicks +
+    " clics";
+
+}
+
+// =========================
+// LOAD GAME
+// =========================
+
+async function loadGame() {
+
+  const { data } = await client
+    .from("global_score")
+    .select("*")
+    .eq("id",1)
+    .single();
+
+  if(!data) return;
+
+  // scores
+
+  let world = data.world_score;
+  let pix = data.pix_score;
+
+  document.getElementById("world").innerText = world;
+  document.getElementById("pix").innerText = pix;
+
+  // domination
+
+  let total = world + pix;
+
+  if(total > 0){
+
+    let percent =
+      Math.floor((world / total) * 100);
+
+    document.getElementById("percent")
+      .innerText = percent + "% domination du monde";
+
+    document.getElementById("bar")
+      .style.width = percent + "%";
+
+    // couleur barre
+
+    if(percent > 60){
+      document.getElementById("bar").style.background = "limegreen";
+    }
+    else if(percent > 40){
+      document.getElementById("bar").style.background = "orange";
+    }
+    else{
+      document.getElementById("bar").style.background = "red";
+    }
+
+  }
+
+  // état Pix
+
+  let pixText = "";
+
+  switch(data.pix_state){
+
+    case "calm":
+      pixText = "Pix est calme";
+      break;
+
+    case "pressure":
+      pixText = "Pix est sous pression";
+      break;
+
+    case "rage":
+      pixText = "Pix est en rage";
+      break;
+
+    case "ultimate":
+      pixText = "Pix atteint sa forme ultime";
+      break;
+
+  }
+
+  document.getElementById("pixState")
+    .innerText = pixText;
+
+    switch(data.pix_state){
+
+  case "calm":
+
+    pixel.style.background =
+      "linear-gradient(145deg,#ffffff,#cfcfcf)";
+
+    break;
+
+  case "pressure":
+
+    pixel.style.background =
+      "linear-gradient(145deg,#ffe600,#ff9900)";
+
+    break;
+
+  case "rage":
+
+    pixel.style.background =
+      "linear-gradient(145deg,#ff4444,#990000)";
+
+    break;
+
+  case "ultimate":
+
+    pixel.style.background =
+      "linear-gradient(145deg,#ff00ff,#5500ff)";
+
+    break;
+
+}
+
+  // timer
+
+  updateTimer(data.game_ends_at);
+
+  // victoire / défaite
+
+  if(data.game_status !== "running"){
+
+    gameEnded = true;
+
+    document.getElementById("clickBtn")
+      .style.display = "none";
+
+    if(data.game_status === "world_win"){
+
+      document.getElementById("gameMessage")
+        .innerText =
+        "Pix a été battu… mais il reviendra… plus fort.";
+
+    }
+    else{
+
+      document.getElementById("gameMessage")
+        .innerText =
+        "Vous n’étiez pas prêts.";
+
+    }
+
+  }
+
+}
+
+// =========================
+// TIMER
+// =========================
+
+function updateTimer(endDate){
+
+  let end =
+    new Date(endDate).getTime();
+
+  let now =
+    new Date().getTime();
+
+  let distance =
+    end - now;
+
+  if(distance < 0){
+    distance = 0;
+  }
+
+  let days =
+    Math.floor(distance / (1000*60*60*24));
+
+  let hours =
+    Math.floor((distance % (1000*60*60*24))
+    / (1000*60*60));
+
+  let minutes =
+    Math.floor((distance % (1000*60*60))
+    / (1000*60));
+
+  let seconds =
+    Math.floor((distance % (1000*60))
+    / 1000);
+
+  document.getElementById("timer")
+    .innerText =
+    days+"j "+
+    hours+"h "+
+    minutes+"m "+
+    seconds+"s";
+
+}
+
+let heat = 0;
+
+let overheated = false;
+
+const pixel =
+  document.getElementById("pixel");
+
+async function clickPixel(){
+
+  if(gameEnded) return;
+
+  if(overheated) return;
+
+  // animation choc
+
+  pixel.classList.add("hit");
+  
+  document.body.style.transform =
+  "translateX(2px)";
+
+setTimeout(() => {
+
+  document.body.style.transform =
+    "translateX(0px)";
+
+},40);
+
+  setTimeout(() => {
+    pixel.classList.remove("hit");
+  },80);
+
+  // chauffe
+
+  heat += 12;
+
+  // glow chaleur
+
+  pixel.style.boxShadow =
+    `0 0 ${20 + heat}px rgba(255,80,80,0.9)`;
+
+  // surcharge
+
+  if(heat >= 100){
+
+    overheated = true;
+
+    pixel.classList.add("overheat");
+
+    // explosion surcharge
+
+    setTimeout(() => {
+
+      pixel.classList.remove("overheat");
+
+      pixel.classList.add("cooldown");
+
+    },1200);
+
+    // fin cooldown
+
+    setTimeout(() => {
+
+      overheated = false;
+
+      heat = 0;
+
+      pixel.classList.remove("cooldown");
+
+      pixel.style.boxShadow =
+        "0 0 20px #00ffe1";
+
+    },3500);
+
+  }
+
+  // backend
+  localClicks++;
+
+localStorage.setItem(
+  "pix_clicks",
+  localClicks
+);
+
+updateContribution();
+
+  await client.rpc("increment_world");
+
+  loadGame();
+
+}
+
+// refroidissement naturel
+
+setInterval(() => {
+
+  if(heat > 0 && !overheated){
+
+    heat -= 2;
+
+    if(heat < 0){
+      heat = 0;
+    }
+
+    pixel.style.boxShadow =
+      `0 0 ${20 + heat}px rgba(255,80,80,0.9)`;
+
+  }
+
+},100);
+
+// event
+
+pixel.addEventListener("click",clickPixel);
+
+// refresh live
+
+setInterval(loadGame,1000);
+
+loadGame();
+
+</script>
+
+</body>
+</html>
