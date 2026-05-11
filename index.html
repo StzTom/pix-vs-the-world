@@ -9,6 +9,7 @@ content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
   <style>
+
 *{
   user-select:none;
   -webkit-user-select:none;
@@ -29,8 +30,14 @@ content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable
   padding-top:40px;
 
   overflow-x:hidden;
+<<<<<<< HEAD
   
   overflow-y:auto;
+=======
+
+  overflow-y:auto;
+
+>>>>>>> 6812784 (refonteUI)
 }
 
 h1{
@@ -391,6 +398,116 @@ h1{
 
 }
 
+#liveFeed{
+
+  width:90%;
+  max-width:500px;
+
+  margin:12px auto;
+
+  padding:10px;
+
+  background:rgba(0,0,0,0.35);
+
+  border:
+    1px solid rgba(255,255,255,0.08);
+
+  border-radius:14px;
+
+  min-height:auto;
+
+  max-height:90px;
+
+  overflow:hidden;
+
+  text-align:left;
+
+}
+
+#barContainer{
+
+  position:relative;
+
+  width:90%;
+
+  height:34px;
+
+  margin:14px auto;
+
+}
+
+#barLabels{
+
+  position:absolute;
+
+  top:50%;
+
+  left:0;
+
+  width:100%;
+
+  transform:translateY(-50%);
+
+  display:flex;
+
+  justify-content:space-between;
+
+  align-items:center;
+
+  box-sizing:border-box;
+
+  padding:0 18px;
+
+  font-weight:bold;
+
+  font-size:14px;
+
+  pointer-events:none;
+
+}
+
+#scoreRow{
+
+  width:90%;
+
+  margin:0 auto;
+
+  display:flex;
+
+  justify-content:space-between;
+
+  font-size:14px;
+
+  color:#d5d5d5;
+
+}
+
+#contribution{
+
+  margin-top:12px;
+
+  color:#00ffe1;
+
+  font-size:15px;
+
+}
+
+#adSpace{
+
+  width:90%;
+
+  height:60px;
+
+  margin:20px auto;
+
+  border-radius:12px;
+
+  border:
+    1px dashed rgba(255,255,255,0.2);
+
+  opacity:0.4;
+
+}
   </style>
 
 </head>
@@ -399,29 +516,43 @@ h1{
 
 <h1>Pix vs The World</h1>
 <p id="intro">
-  Le monde a 30 jours pour battre Pix.<br>
-  Chaque clic compte.<br>
-  Pix évolue. Pix s’adapte. Pix contre-attaque.
+  Vous faites partie du Monde.<br>
+  Cliquez pour affaiblir Pix avant qu’il ne prenne le contrôle.
 </p>
 
-<h2 id="pixState">Pix est calme</h2>
-
-<h2>World : <span id="world">0</span></h2>
-<h2>Pix : <span id="pix">0</span></h2>
-
-<h2 id="percent">0%</h2>
+<h2 id="timer">00j 00h 00m 00s</h2>
 
 <div id="liveFeed"></div>
 
-<h3 id="contribution">
-  Votre contribution : 0 clic
-</h3>
-
 <div id="barContainer">
+
   <div id="bar"></div>
+
+  <div id="barLabels">
+
+    <span id="worldPercent">50%</span>
+
+    <span id="pixPercent">50%</span>
+
+  </div>
+
 </div>
 
-<h2 id="timer">00j 00h 00m 00s</h2>
+<div id="scoreRow">
+
+  <div id="worldScore">
+    World : <span id="world">0</span>
+  </div>
+
+  <div id="pixScore">
+    Pix : <span id="pix">0</span>
+  </div>
+
+</div>
+
+<div id="contribution">
+  Votre contribution : 0 clic
+</div>
 
 <div id="pixelContainer">
 
@@ -432,6 +563,10 @@ h1{
   </div>
 
 </div>
+
+<h2 id="pixState">Pix est calme</h2>
+
+<div id="adSpace"></div>
 
 <div id="gameMessage"></div>
 
@@ -543,8 +678,11 @@ async function loadGame() {
     let percent =
       Math.floor((world / total) * 100);
 
-    document.getElementById("percent")
-      .innerText = percent + "% domination du monde";
+    document.getElementById("worldPercent")
+  .innerText = percent + "%";
+
+document.getElementById("pixPercent")
+  .innerText = (100 - percent) + "%";
 
     document.getElementById("bar")
       .style.width = percent + "%";
@@ -632,9 +770,7 @@ async function loadGame() {
 
     gameEnded = true;
 
-    document.getElementById("clickBtn")
-      .style.display = "none";
-
+    pixel.style.display = "none";
     if(data.game_status === "world_win"){
 
       document.getElementById("gameMessage")
