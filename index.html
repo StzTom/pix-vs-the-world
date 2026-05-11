@@ -49,6 +49,37 @@ h1{
 
 }
 
+#liveFeed{
+
+  width:90%;
+  max-width:500px;
+
+  margin:10px auto;
+
+  padding:5px 10px;
+
+  background:rgba(0,0,0,0.28);
+
+  border:1px solid rgba(255,255,255,0.06);
+
+  border-radius:12px;
+
+  height:64px;
+
+  overflow:hidden;
+
+  text-align:left;
+
+  display:flex;
+
+  flex-direction:column;
+
+  justify-content:center;
+
+  box-sizing:border-box;
+
+}
+
 #pixState{
 
   color:#ff2975;
@@ -278,6 +309,7 @@ h1{
     0 0 10px #00ffe1;
 
 }
+
 @media(max-width:700px){
 
   h1{
@@ -312,40 +344,25 @@ h1{
   -webkit-user-select:none;
 }
 
-#liveFeed{
-
-  width:90%;
-
-  max-width:500px;
-
-  margin:30px auto;
-
-  padding:15px;
-
-  background:rgba(0,0,0,0.4);
-
-  border:
-    1px solid rgba(255,255,255,0.08);
-
-  border-radius:14px;
-
-  min-height:120px;
-
-  text-align:left;
-
-  overflow:hidden;
-
-}
-
 .feedMessage{
 
-  margin:8px 0;
+  height:18px;
+
+  line-height:18px;
+
+  margin:0;
 
   color:#d5d5d5;
 
-  font-size:14px;
+  font-size:12px;
 
-  animation:feedAppear 0.3s ease;
+  white-space:nowrap;
+
+  overflow:hidden;
+
+  text-overflow:ellipsis;
+
+  animation:feedAppear 0.25s ease;
 
 }
 
@@ -390,32 +407,6 @@ h1{
   }
 
 }
-
-}
-
-#liveFeed{
-
-  width:90%;
-  max-width:500px;
-
-  margin:12px auto;
-
-  padding:10px;
-
-  background:rgba(0,0,0,0.35);
-
-  border:
-    1px solid rgba(255,255,255,0.08);
-
-  border-radius:14px;
-
-  min-height:auto;
-
-  max-height:90px;
-
-  overflow:hidden;
-
-  text-align:left;
 
 }
 
@@ -484,6 +475,76 @@ h1{
   color:#00ffe1;
 
   font-size:15px;
+
+}
+
+#dailyObjective{
+
+  width:90%;
+
+  max-width:500px;
+
+  margin:14px auto 8px auto;
+
+  padding:10px;
+
+  background:
+    rgba(0,255,225,0.05);
+
+  border:
+    1px solid rgba(0,255,225,0.12);
+
+  border-radius:14px;
+
+}
+
+#dailyTitle{
+
+  font-size:12px;
+
+  letter-spacing:2px;
+
+  color:#00ffe1;
+
+  opacity:0.7;
+
+  margin-bottom:4px;
+
+}
+
+#dailyProgress{
+
+  font-size:20px;
+
+  font-weight:bold;
+
+  color:white;
+
+  text-shadow:
+    0 0 12px rgba(0,255,225,0.35);
+
+}
+
+#dailyReward{
+
+  margin-top:6px;
+
+  font-size:12px;
+
+  color:#999;
+
+  letter-spacing:1px;
+
+  transition:0.3s;
+
+}
+
+#dailyReward.completed{
+
+  color:#00ff88;
+
+  text-shadow:
+    0 0 12px rgba(0,255,136,0.7);
 
 }
 
@@ -679,6 +740,22 @@ h1{
 
 </div>
 
+<div id="dailyObjective">
+
+  <div id="dailyTitle">
+    OBJECTIF MONDE
+  </div>
+
+  <div id="dailyProgress">
+    0 / 10000
+  </div>
+
+  <div id="dailyReward">
+  RÉCOMPENSE : BOOST X2 — 1H
+</div>
+
+</div>
+
 <div id="contribution">
   Votre contribution : 0 clic
 </div>
@@ -717,10 +794,24 @@ let gameEnded = false;
 
 let lastPixState = "";
 
+let activeBonus = null;
+
+let bonusEndsAt = null;
+
+let clickMultiplier = 1;
+
+let dailyClicks = 0;
+
+let dailyGoal = 10000;
+
+let currentReward = "";
+
 let communityNames = [];
 
 let localClicks =
-  localStorage.getItem("pix_clicks") || 0;
+  parseInt(
+    localStorage.getItem("pix_clicks")
+  ) || 0;
 
 updateContribution();
 
@@ -762,14 +853,13 @@ function addFeedMessage(message){
 
   feed.prepend(div);
 
-  // max 6 messages
+  // max 3 messages
 
-  while(feed.children.length > 6){
+while(feed.children.length > 3){
 
-    feed.removeChild(feed.lastChild);
+  feed.removeChild(feed.lastChild);
 
-  }
-
+}
 }
 
 function updateContribution(){
@@ -794,6 +884,193 @@ function updateContribution(){
 // =========================
 // LOAD GAME
 // =========================
+
+async function loadDailyObjective(){
+
+  const { data } = await client
+    .from("daily_objective")
+    .select("*")
+    .eq("id",1)
+    .single();
+
+  if(!data) return;
+
+  dailyClicks =
+    data.daily_clicks;
+
+dailyGoal =
+  data.daily_goal;
+
+currentReward =
+  data.reward_name;
+
+  activeBonus =
+    data.active_bonus;
+
+    bonusEndsAt =
+  data.bonus_ends_at;
+  
+    clickMultiplier = 1;
+
+if(
+  activeBonus ===
+  "BOOST X2 — 1H"
+){
+
+  clickMultiplier = 2;
+
+}
+
+if(
+  activeBonus ===
+  "BOOST X3 — 15MIN"
+){
+
+  clickMultiplier = 3;
+
+}
+
+if(
+  activeBonus ===
+  "RAGE DU MONDE — 10MIN"
+){
+
+  clickMultiplier = 2;
+
+}
+  // affichage progression
+
+const displayClicks =
+  Math.min(
+    dailyClicks,
+    dailyGoal
+  );
+
+document.getElementById(
+  "dailyProgress"
+).innerText =
+  displayClicks +
+  " / " +
+  dailyGoal;
+
+const rewardElement =
+  document.getElementById(
+    "dailyReward"
+  );
+
+if(activeBonus){
+
+  rewardElement.classList.add(
+    "completed"
+  );
+
+}
+else{
+
+  rewardElement.classList.remove(
+    "completed"
+  );
+
+}
+
+if(!activeBonus){
+
+  document.getElementById(
+    "dailyReward"
+  ).innerText =
+    "RÉCOMPENSE : "
++ currentReward;
+
+}
+
+}
+
+async function incrementDailyClicks(){
+
+  await client.rpc(
+    "increment_daily_clicks"
+  );
+
+}
+
+async function checkDailyObjective(){
+
+  if(
+    dailyClicks >= dailyGoal
+    &&
+    activeBonus === null
+  ){
+
+    activeBonus =
+      currentReward;
+
+    let bonusEnd = null;
+
+    if(
+      currentReward.includes("1H")
+    ){
+
+      bonusEnd =
+        new Date(
+          Date.now() + 60*60*1000
+        ).toISOString();
+
+    }
+
+    if(
+      currentReward.includes("15MIN")
+    ){
+
+      bonusEnd =
+        new Date(
+          Date.now() + 15*60*1000
+        ).toISOString();
+
+    }
+
+    if(
+      currentReward.includes("30MIN")
+    ){
+
+      bonusEnd =
+        new Date(
+          Date.now() + 30*60*1000
+        ).toISOString();
+
+    }
+
+    if(
+      currentReward.includes("10MIN")
+    ){
+
+      bonusEnd =
+        new Date(
+          Date.now() + 10*60*1000
+        ).toISOString();
+
+    }
+
+    await client
+      .from("daily_objective")
+      .update({
+
+        active_bonus:
+          currentReward,
+
+        bonus_ends_at:
+          bonusEnd
+
+      })
+      .eq("id",1);
+
+    addFeedMessage(
+      "OBJECTIF MONDE ATTEINT : "
+      + currentReward
+    );
+
+  }
+
+}
 
 async function loadGame() {
 
@@ -977,6 +1254,83 @@ function updateTimer(endDate){
 
 }
 
+function updateBonusTimer(){
+
+  const rewardElement =
+    document.getElementById(
+      "dailyReward"
+    );
+
+  // aucun bonus
+
+  if(
+    !activeBonus
+    ||
+    !bonusEndsAt
+  ){
+
+    return;
+
+  }
+
+  const end =
+    new Date(
+      bonusEndsAt
+    ).getTime();
+
+  const now =
+    new Date().getTime();
+
+  let distance =
+    end - now;
+
+  // bonus terminé
+
+  if(distance <= 0){
+
+    rewardElement.innerText =
+      "RÉCOMPENSE TERMINÉE";
+
+    return;
+
+  }
+
+  const hours =
+    Math.floor(
+      distance / (1000*60*60)
+    );
+
+  const minutes =
+    Math.floor(
+      (distance % (1000*60*60))
+      / (1000*60)
+    );
+
+  const seconds =
+    Math.floor(
+      (distance % (1000*60))
+      / 1000
+    );
+
+  const formattedTime =
+    String(hours).padStart(2,"0")
+    + "h" +
+    String(minutes).padStart(2,"0")
+    + "m" +
+    String(seconds).padStart(2,"0")
+    + "s";
+
+  rewardElement.innerText =
+    "RÉCOMPENSE : "
+    + activeBonus.replace(
+      / — .*/,
+      ""
+    )
+    + " "
+    + formattedTime;
+
+}
+
 let heat = 0;
 
 let overheated = false;
@@ -1008,7 +1362,14 @@ setTimeout(() => {
 
   // chauffe
 
+if(
+  activeBonus !==
+  "RAGE DU MONDE — 10MIN"
+){
+
   heat += 3;
+
+}
 
   if(heat >= 50){
 
@@ -1034,10 +1395,6 @@ pixel.style.boxShadow =
 pixel.style.filter =
   `brightness(${1 + heat/120})`;
 
-  // surcharge
-
-  let clickPower = 1;
-
 if(heat >= 70){
 
   pixel.classList.add("hot");
@@ -1054,7 +1411,7 @@ else{
 }
 
   // backend
-  localClicks++;
+localClicks += clickMultiplier;
 
 localStorage.setItem(
   "pix_clicks",
@@ -1063,13 +1420,35 @@ localStorage.setItem(
 
 updateContribution();
 
-if(Math.random() <= clickPower){
+  for(
+  let i = 0;
+  i < clickMultiplier;
+  i++
+){
 
-  await client.rpc("increment_world");
+  await client.rpc(
+    "increment_world"
+  );
+
+  await incrementDailyClicks();
 
 }
 
-  loadGame();
+if(
+  activeBonus ===
+  "PIX VULNÉRABLE — 30MIN"
+){
+
+  await client.rpc(
+    "decrement_pix"
+  );
+
+}
+
+await checkDailyObjective();
+
+loadGame();
+loadDailyObjective();
 
 }
 
@@ -1159,6 +1538,11 @@ pixel.addEventListener("click",clickPixel);
 
 setInterval(loadGame,1000);
 
+setInterval(
+  loadDailyObjective,
+  3000
+);
+
 let playerPseudo =
   localStorage.getItem("pix_pseudo");
 
@@ -1238,7 +1622,7 @@ startBtn.addEventListener("click", async () => {
   .from("player_names")
   .upsert({
     pseudo: playerPseudo,
-    updated_at: new Date()
+   updated_at: new Date().toISOString()
   });
 
   overlay.style.display = "none";
@@ -1282,6 +1666,9 @@ async function loadCommunityNames(){
 
 }
 
+let lastCommunityPseudo = "";
+let lastCommunityAction = "";
+
 const communityActions = [
 
   "attaque Pix sans relâche.",
@@ -1289,41 +1676,221 @@ const communityActions = [
   "résiste encore.",
   "harcèle Pix.",
   "refuse d'abandonner.",
-  "pousse Pix dans ses retranchements."
+  "pousse Pix dans ses retranchements.",
+  "ne se laisse pas faire par Pix.",
+  "continue de cliquer malgré la douleur.",
+  "ne cède pas face à Pix.",
+
+  "affaiblit Pix coup après coup.",
+  "participe à l'effort de guerre.",
+  "fait reculer Pix.",
+  "gagne du terrain contre Pix.",
+  "continue le combat.",
+  "frappe Pix sans hésitation.",
+  "attaque encore et encore.",
+  "fait pression sur Pix.",
+  "maintient Pix sous tension.",
+  "s'acharne sur Pix.",
+
+  "est un héros du Monde.",
+  "est un fléau pour Pix.",
+  "est un adversaire redoutable pour Pix.",
+  "est un pilier de la résistance.",
+  "est un combattant infatigable.",
+  "est un véritable guerrier du Monde.",
+  "est un cauchemar vivant pour Pix.",
+  "est une menace grandissante pour Pix.",
+
+  "vient de lancer une attaque.",
+  "refuse de laisser Pix gagner.",
+  "reste mobilisé contre Pix.",
+  "continue la résistance.",
+  "surveille les mouvements de Pix.",
+  "prépare une nouvelle offensive.",
+  "attaque Pix avec violence.",
+  "fait vaciller Pix.",
+
+  "commence à énerver Pix.",
+  "donne du fil à retordre à Pix.",
+  "fait perdre patience à Pix.",
+  "n'a aucune pitié pour Pix.",
+  "ne ralentit toujours pas.",
+
+  "semble inarrêtable.",
+  "est toujours dans la bataille.",
+  "revient au front.",
+  "mène une offensive contre Pix.",
+  "continue l'assaut.",
+
+  // rares / humoristiques
+
+  "attaque Pix avec une énergie inquiétante.",
+  "a probablement trop de temps libre.",
+  "semble déterminé à détruire Pix.",
+  "n'a clairement pas peur de Pix.",
+  "vient encore de cliquer.",
+  "refuse littéralement de s'arrêter.",
+  "commence à faire peur à Pix.",
+  "est devenu une obsession pour Pix."
 
 ];
 
-setInterval(() => {
+const globalMessages = [
 
-  if(communityNames.length === 0){
-    return;
+  "Le Monde contre-attaque.",
+  "Pix perd du terrain.",
+  "La résistance s'organise.",
+  "Le Monde refuse d'abandonner.",
+  "Pix commence à vaciller.",
+  "Une vague d'attaques frappe Pix.",
+  "Le Monde intensifie l'assaut.",
+  "Pix subit une pression constante.",
+  "Les combattants du Monde restent mobilisés.",
+  "Pix semble perturbé."
+
+];
+
+const rareMessages = [
+
+  "Pix semble observer silencieusement le Monde.",
+  "Une anomalie entoure Pix.",
+  "Le Monde retient son souffle.",
+  "Pix devient momentanément instable.",
+  "Quelque chose change autour de Pix...",
+  "Une présence étrange traverse le Monde.",
+  "Pix semble perdre le contrôle.",
+  "Le combat atteint un nouveau niveau."
+
+];
+
+function launchCommunityFeed(){
+
+  const randomChance =
+    Math.random();
+
+  // =====================
+  // MESSAGES RARES
+  // =====================
+
+  if(randomChance <= 0.08){
+
+    const rareMessage =
+      rareMessages[
+        Math.floor(
+          Math.random() *
+          rareMessages.length
+        )
+      ];
+
+    addFeedMessage(
+      rareMessage
+    );
+
   }
 
-  const pseudo =
-    communityNames[
-      Math.floor(
-        Math.random() *
-        communityNames.length
-      )
-    ];
+  // =====================
+  // MESSAGES GLOBAUX
+  // =====================
 
-  const action =
-    communityActions[
-      Math.floor(
-        Math.random() *
-        communityActions.length
-      )
-    ];
+  else if(randomChance <= 0.30){
 
-  addFeedMessage(
-    pseudo + " " + action
+    const globalMessage =
+      globalMessages[
+        Math.floor(
+          Math.random() *
+          globalMessages.length
+        )
+      ];
+
+    addFeedMessage(
+      globalMessage
+    );
+
+  }
+
+  // =====================
+  // MESSAGES JOUEURS
+  // =====================
+
+  else{
+
+    if(communityNames.length > 0){
+
+      let pseudo = "";
+      let action = "";
+
+      do{
+
+        pseudo =
+          communityNames[
+            Math.floor(
+              Math.random() *
+              communityNames.length
+            )
+          ];
+
+      } while(
+        pseudo === lastCommunityPseudo
+        &&
+        communityNames.length > 1
+      );
+
+      do{
+
+        action =
+          communityActions[
+            Math.floor(
+              Math.random() *
+              communityActions.length
+            )
+          ];
+
+      } while(
+        action === lastCommunityAction
+        &&
+        communityActions.length > 1
+      );
+
+      lastCommunityPseudo = pseudo;
+      lastCommunityAction = action;
+
+      addFeedMessage(
+        pseudo + " " + action
+      );
+
+    }
+
+  }
+
+  // délai aléatoire
+
+  const nextDelay =
+    Math.floor(
+      Math.random() * 6000
+    ) + 5000;
+
+  setTimeout(
+    launchCommunityFeed,
+    nextDelay
   );
 
-},7000);
+}
 
-loadCommunityNames();
+
+launchCommunityFeed();
+
+setInterval(loadCommunityNames,10000);
+
+setInterval(
+  updateBonusTimer,
+  1000
+);
+
+loadDailyObjective();
 
 loadGame();
+
+
 
 </script>
 
