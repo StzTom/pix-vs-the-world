@@ -27,7 +27,7 @@ content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable
 
   font-family:Arial;
 
-  padding-top:40px;
+  padding-top:12px;
 
   overflow-x:hidden;
 
@@ -37,7 +37,7 @@ content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable
 
 h1{
 
-  font-size:60px;
+  font-size:48px;
 
   color:#00ffe1;
 
@@ -122,22 +122,17 @@ h1{
 
 #timer{
 
-  margin-top:20px;
+  margin-top:8px;
 
   color:#aaa;
 
 }
 
 #pixelContainer{
-
   display:flex;
-
   justify-content:center;
-
   align-items:center;
-
-  margin-top:50px;
-
+  margin-top:20px;
 }
 
 #pixel{
@@ -759,10 +754,6 @@ h1{
 <div id="contribution">
   Votre contribution : 0 clic
 </div>
-
-<button id="changePseudoBtn">
-  Changer de pseudo
-</button>
 
 <div id="pixelContainer">
 
@@ -1568,8 +1559,6 @@ const overlay =
 const startBtn =
   document.getElementById("startBtn");
 
-const changePseudoBtn =
-  document.getElementById("changePseudoBtn");
 
 if(playerPseudo){
 
@@ -1586,16 +1575,6 @@ if(playerPseudo){
   addFeedMessage(randomMessage);
 
 }
-
-// bouton changement pseudo
-
-changePseudoBtn.addEventListener("click",() => {
-
-  overlay.style.display = "flex";
-
-});
-
-// validation pseudo
 
 startBtn.addEventListener("click", async () => {
 
