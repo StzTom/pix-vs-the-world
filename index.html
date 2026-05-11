@@ -646,7 +646,7 @@ h1{
 <h1>Pix vs The World</h1>
 <p id="intro">
   Vous faites partie du Monde.<br>
-  Empêchez Pix de perdre le contrôle.
+  Empêchez Pix de prendre le contrôle.
 </p>
 
 <h2 id="timer">00j 00h 00m 00s</h2>
@@ -716,6 +716,8 @@ const client = supabase.createClient(
 let gameEnded = false;
 
 let lastPixState = "";
+
+let communityNames = [];
 
 let localClicks =
   localStorage.getItem("pix_clicks") || 0;
@@ -1211,7 +1213,7 @@ changePseudoBtn.addEventListener("click",() => {
 
 // validation pseudo
 
-startBtn.addEventListener("click",() => {
+startBtn.addEventListener("click", async () => {
 
   const input =
     document.getElementById("pseudoInput");
@@ -1231,6 +1233,13 @@ startBtn.addEventListener("click",() => {
   );
 
   playerPseudo = pseudo;
+
+  await client
+  .from("player_names")
+  .upsert({
+    pseudo: playerPseudo,
+    updated_at: new Date()
+  });
 
   overlay.style.display = "none";
 
@@ -1256,6 +1265,63 @@ startBtn.addEventListener("click",() => {
   }
 
 });
+
+async function loadCommunityNames(){
+
+  const { data } = await client
+    .from("player_names")
+    .select("pseudo")
+    .limit(20);
+
+  if(data){
+
+    communityNames =
+      data.map(player => player.pseudo);
+
+  }
+
+}
+
+const communityActions = [
+
+  "attaque Pix sans relâche.",
+  "fait trembler Pix.",
+  "résiste encore.",
+  "harcèle Pix.",
+  "refuse d'abandonner.",
+  "pousse Pix dans ses retranchements."
+
+];
+
+setInterval(() => {
+
+  if(communityNames.length === 0){
+    return;
+  }
+
+  const pseudo =
+    communityNames[
+      Math.floor(
+        Math.random() *
+        communityNames.length
+      )
+    ];
+
+  const action =
+    communityActions[
+      Math.floor(
+        Math.random() *
+        communityActions.length
+      )
+    ];
+
+  addFeedMessage(
+    pseudo + " " + action
+  );
+
+},7000);
+
+loadCommunityNames();
 
 loadGame();
 
