@@ -599,6 +599,22 @@ h1{
   cursor:pointer;
 
 }
+
+#changePseudoBtn{
+
+  margin-top:8px;
+
+  background:none;
+
+  border:none;
+
+  color:#888;
+
+  font-size:12px;
+
+  cursor:pointer;
+
+}
   </style>
 
 </head>
@@ -666,6 +682,10 @@ h1{
 <div id="contribution">
   Votre contribution : 0 clic
 </div>
+
+<button id="changePseudoBtn">
+  Changer de pseudo
+</button>
 
 <div id="pixelContainer">
 
@@ -1162,6 +1182,9 @@ const overlay =
 const startBtn =
   document.getElementById("startBtn");
 
+const changePseudoBtn =
+  document.getElementById("changePseudoBtn");
+
 if(playerPseudo){
 
   overlay.style.display = "none";
@@ -1178,36 +1201,61 @@ if(playerPseudo){
 
 }
 
-else{
+// bouton changement pseudo
 
-  startBtn.addEventListener("click",() => {
+changePseudoBtn.addEventListener("click",() => {
 
-    const input =
-      document.getElementById("pseudoInput");
+  overlay.style.display = "flex";
 
-    let pseudo =
-      input.value.trim();
+});
 
-    if(pseudo.length < 3){
-      return;
-    }
+// validation pseudo
 
-    localStorage.setItem(
-      "pix_pseudo",
-      pseudo
-    );
+startBtn.addEventListener("click",() => {
 
-    playerPseudo = pseudo;
+  const input =
+    document.getElementById("pseudoInput");
 
-    overlay.style.display = "none";
+  let pseudo =
+    input.value.trim();
+
+  if(pseudo.length < 3){
+    return;
+  }
+
+  const oldPseudo = playerPseudo;
+
+  localStorage.setItem(
+    "pix_pseudo",
+    pseudo
+  );
+
+  playerPseudo = pseudo;
+
+  overlay.style.display = "none";
+
+  updateContribution();
+
+  if(oldPseudo){
 
     addFeedMessage(
-      pseudo + " a rejoint nos rangs."
+      oldPseudo +
+      " est devenu " +
+      pseudo +
+      "."
     );
 
-  });
+  }
+  else{
 
-}
+    addFeedMessage(
+      pseudo +
+      " a rejoint nos rangs."
+    );
+
+  }
+
+});
 
 loadGame();
 
