@@ -30,14 +30,9 @@ content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable
   padding-top:40px;
 
   overflow-x:hidden;
-<<<<<<< HEAD
-  
-  overflow-y:auto;
-=======
 
   overflow-y:auto;
 
->>>>>>> 6812784 (refonteUI)
 }
 
 h1{
@@ -508,16 +503,134 @@ h1{
   opacity:0.4;
 
 }
+
+#pseudoOverlay{
+
+  position:fixed;
+
+  inset:0;
+
+  background:rgba(0,0,0,0.92);
+
+  display:flex;
+
+  justify-content:center;
+
+  align-items:center;
+
+  z-index:9999;
+
+}
+
+#pseudoBox{
+
+  width:85%;
+
+  max-width:320px;
+
+  padding:25px;
+
+  border-radius:18px;
+
+  background:#111;
+
+  border:1px solid rgba(255,255,255,0.08);
+
+}
+
+#pseudoBox h2{
+
+  color:#00ffe1;
+
+  margin-bottom:10px;
+
+}
+
+#pseudoBox p{
+
+  color:#aaa;
+
+  margin-bottom:20px;
+
+}
+
+#pseudoInput{
+
+  width:100%;
+
+  padding:14px;
+
+  border:none;
+
+  border-radius:12px;
+
+  background:#1d1d1d;
+
+  color:white;
+
+  font-size:16px;
+
+  margin-bottom:15px;
+
+  outline:none;
+
+  box-sizing:border-box;
+
+}
+
+#startBtn{
+
+  width:100%;
+
+  padding:14px;
+
+  border:none;
+
+  border-radius:12px;
+
+  background:#00ffe1;
+
+  color:black;
+
+  font-weight:bold;
+
+  font-size:16px;
+
+  cursor:pointer;
+
+}
   </style>
 
 </head>
 
 <body>
 
+  <div id="pseudoOverlay">
+
+  <div id="pseudoBox">
+
+    <h2>Bienvenue dans le Monde</h2>
+
+    <p>Choisissez votre pseudo</p>
+
+    <input
+      type="text"
+      id="pseudoInput"
+      maxlength="14"
+      placeholder="Votre pseudo">
+
+    <button id="startBtn">
+      Entrer dans le combat
+    </button>
+
+  </div>
+
+</div>
+
 <h1>Pix vs The World</h1>
 <p id="intro">
   Vous faites partie du Monde.<br>
-  Cliquez pour affaiblir Pix avant qu’il ne prenne le contrôle.
+  Empêchez Pix de perdre le contrôle.
 </p>
 
 <h2 id="timer">00j 00h 00m 00s</h2>
@@ -639,9 +752,18 @@ function addFeedMessage(message){
 
 function updateContribution(){
 
+  let pseudo =
+    localStorage.getItem("pix_pseudo");
+
+  if(!pseudo){
+    pseudo = "Anonyme";
+  }
+
   document.getElementById("contribution")
     .innerText =
-    "Votre contribution : " +
+    "Contribution de " +
+    pseudo +
+    " : " +
     localClicks +
     " clics";
 
@@ -1014,6 +1136,78 @@ pixel.addEventListener("click",clickPixel);
 // refresh live
 
 setInterval(loadGame,1000);
+
+let playerPseudo =
+  localStorage.getItem("pix_pseudo");
+
+  const returnMessages = [
+
+  playerPseudo +
+  " s'est remis à l'attaque de Pix.",
+
+  "Pix tremble en voyant " +
+  playerPseudo +
+  " revenir.",
+
+  playerPseudo +
+  " revient participer à l'effort de guerre."
+
+];
+
+// overlay pseudo
+
+const overlay =
+  document.getElementById("pseudoOverlay");
+
+const startBtn =
+  document.getElementById("startBtn");
+
+if(playerPseudo){
+
+  overlay.style.display = "none";
+
+  const randomMessage =
+    returnMessages[
+      Math.floor(
+        Math.random() *
+        returnMessages.length
+      )
+    ];
+
+  addFeedMessage(randomMessage);
+
+}
+
+else{
+
+  startBtn.addEventListener("click",() => {
+
+    const input =
+      document.getElementById("pseudoInput");
+
+    let pseudo =
+      input.value.trim();
+
+    if(pseudo.length < 3){
+      return;
+    }
+
+    localStorage.setItem(
+      "pix_pseudo",
+      pseudo
+    );
+
+    playerPseudo = pseudo;
+
+    overlay.style.display = "none";
+
+    addFeedMessage(
+      pseudo + " a rejoint nos rangs."
+    );
+
+  });
+
+}
 
 loadGame();
 
