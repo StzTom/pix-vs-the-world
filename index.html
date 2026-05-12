@@ -901,6 +901,29 @@ currentReward =
     bonusEndsAt =
   data.bonus_ends_at;
   
+  if(
+
+  bonusEndsAt
+  &&
+  new Date(bonusEndsAt) < new Date()
+
+){
+
+  await client
+    .from("daily_objective")
+    .update({
+
+      active_bonus: null,
+      bonus_ends_at: null
+
+    })
+    .eq("id",1);
+
+  activeBonus = null;
+
+  bonusEndsAt = null;
+
+}
     clickMultiplier = 1;
 
 if(
@@ -1245,7 +1268,7 @@ function updateTimer(endDate){
 
 }
 
-function updateBonusTimer(){
+ async function updateBonusTimer(){
 
   const rewardElement =
     document.getElementById(
@@ -1279,12 +1302,28 @@ function updateBonusTimer(){
 
   if(distance <= 0){
 
-    rewardElement.innerText =
-      "RÉCOMPENSE TERMINÉE";
+  rewardElement.innerText =
+    "RÉCOMPENSE TERMINÉE";
 
-    return;
+  activeBonus = null;
 
-  }
+  bonusEndsAt = null;
+
+  clickMultiplier = 1;
+
+  await client
+    .from("daily_objective")
+    .update({
+
+      active_bonus: null,
+      bonus_ends_at: null
+
+    })
+    .eq("id",1);
+
+  return;
+
+}
 
   const hours =
     Math.floor(
