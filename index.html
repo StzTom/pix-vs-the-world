@@ -1769,16 +1769,11 @@ startBtn.addEventListener("click", async () => {
 async function syncPlayerData(){
 
   const pseudo =
-    localStorage.getItem("pix_pseudo");
-
-  if(!pseudo) return;
-
-  const alreadyMigrated =
     localStorage.getItem(
-      "pix_migrated"
+      "pix_pseudo"
     );
 
-  if(alreadyMigrated === "true"){
+  if(!pseudo){
     return;
   }
 
@@ -1789,9 +1784,26 @@ async function syncPlayerData(){
       )
     ) || 0;
 
+  const { data: existingPlayer } =
+    await client
+      .from("players")
+      .select("pseudo")
+      .eq("pseudo",pseudo)
+      .single();
+
+  // joueur déjà existant
+
+  if(existingPlayer){
+
+    return;
+
+  }
+
+  // migration localStorage -> supabase
+
   await client
     .from("players")
-    .upsert({
+    .insert({
 
       pseudo: pseudo,
 
@@ -1802,9 +1814,9 @@ async function syncPlayerData(){
 
     });
 
-  localStorage.setItem(
-    "pix_migrated",
-    "true"
+  addFeedMessage(
+    pseudo +
+    " rejoint le classement."
   );
 
 }
@@ -1813,9 +1825,6 @@ async function loadCommunityNames(){
 
   const { data } = await client
     .from("players")
-    if(!playerPseudo){
-  return;
-}
     .select("pseudo")
     .limit(20);
 
