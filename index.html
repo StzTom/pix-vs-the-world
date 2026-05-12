@@ -671,6 +671,74 @@ h1{
   cursor:pointer;
 
 }
+
+    #leaderboard{
+
+  width:90%;
+  max-width:500px;
+
+  margin:30px auto;
+
+  padding:14px;
+
+  border-radius:16px;
+
+  background:
+    rgba(255,255,255,0.04);
+
+  border:
+    1px solid rgba(255,255,255,0.08);
+
+}
+
+#leaderboardTitle{
+
+  color:#00ffe1;
+
+  font-size:18px;
+
+  margin-bottom:14px;
+
+  letter-spacing:2px;
+
+}
+
+.leaderboardPlayer{
+
+  display:flex;
+
+  justify-content:space-between;
+
+  align-items:center;
+
+  padding:8px 0;
+
+  border-bottom:
+    1px solid rgba(255,255,255,0.05);
+
+  font-size:14px;
+
+}
+
+.leaderboardPlayer:last-child{
+
+  border-bottom:none;
+
+}
+
+.leaderboardRank{
+
+  color:#00ffe1;
+
+  margin-right:10px;
+
+}
+
+.leaderboardClicks{
+
+  color:#999;
+
+}
   </style>
 
 </head>
@@ -769,6 +837,20 @@ h1{
 
 <div id="adSpace"></div>
 
+<div id="leaderboard">
+
+  <div id="leaderboardTitle">
+    TOP MONDE — ALL TIME
+  </div>
+
+  <div id="leaderboardContent">
+
+    Chargement...
+
+  </div>
+
+</div>
+
 <div id="gameMessage"></div>
 
 <script>
@@ -782,6 +864,8 @@ const client = supabase.createClient(
 );
 
 let gameEnded = false;
+
+let rewardClaimed = false;
 
 let lastPixState = "";
 
@@ -886,116 +970,106 @@ async function loadDailyObjective(){
 
   if(!data) return;
 
-  dailyClicks =
-    data.daily_clicks;
+  dailyClicks = data.daily_clicks;
+  dailyGoal = data.daily_goal;
 
-dailyGoal =
-  data.daily_goal;
+  currentReward = data.reward_name;
 
-currentReward =
-  data.reward_name;
+  activeBonus = data.active_bonus;
 
-  activeBonus =
-    data.active_bonus;
+  bonusEndsAt = data.bonus_ends_at;
 
-    bonusEndsAt =
-  data.bonus_ends_at;
-  
+  rewardClaimed = data.reward_claimed;
+
+  // bonus expiré
+
   if(
+    bonusEndsAt &&
+    new Date(bonusEndsAt) < new Date()
+  ){
 
-  bonusEndsAt
-  &&
-  new Date(bonusEndsAt) < new Date()
+    await client
+      .from("daily_objective")
+      .update({
 
-){
+        active_bonus: null,
+        bonus_ends_at: null
 
-  await client
-    .from("daily_objective")
-    .update({
+      })
+      .eq("id",1);
 
-      active_bonus: null,
-      bonus_ends_at: null
+    activeBonus = null;
+    bonusEndsAt = null;
 
-    })
-    .eq("id",1);
+  }
 
-  activeBonus = null;
+  // multiplicateur
 
-  bonusEndsAt = null;
+  clickMultiplier = 1;
 
-}
-    clickMultiplier = 1;
+  if(
+    activeBonus ===
+    "BOOST X2 — 1H"
+  ){
+    clickMultiplier = 2;
+  }
 
-if(
-  activeBonus ===
-  "BOOST X2 — 1H"
-){
+  if(
+    activeBonus ===
+    "BOOST X3 — 15MIN"
+  ){
+    clickMultiplier = 3;
+  }
 
-  clickMultiplier = 2;
+  if(
+    activeBonus ===
+    "RAGE DU MONDE — 10MIN"
+  ){
+    clickMultiplier = 2;
+  }
 
-}
-
-if(
-  activeBonus ===
-  "BOOST X3 — 15MIN"
-){
-
-  clickMultiplier = 3;
-
-}
-
-if(
-  activeBonus ===
-  "RAGE DU MONDE — 10MIN"
-){
-
-  clickMultiplier = 2;
-
-}
   // affichage progression
 
-const displayClicks =
-  Math.min(
-    dailyClicks,
-    dailyGoal
-  );
-
-document.getElementById(
-  "dailyProgress"
-).innerText =
-  displayClicks +
-  " / " +
-  dailyGoal;
-
-const rewardElement =
-  document.getElementById(
-    "dailyReward"
-  );
-
-if(activeBonus){
-
-  rewardElement.classList.add(
-    "completed"
-  );
-
-}
-else{
-
-  rewardElement.classList.remove(
-    "completed"
-  );
-
-}
-
-if(!activeBonus){
+  const displayClicks =
+    Math.min(
+      dailyClicks,
+      dailyGoal
+    );
 
   document.getElementById(
-    "dailyReward"
+    "dailyProgress"
   ).innerText =
-    "RÉCOMPENSE : "
-+ currentReward;
+    displayClicks +
+    " / " +
+    dailyGoal;
 
-}
+  const rewardElement =
+    document.getElementById(
+      "dailyReward"
+    );
+
+  if(activeBonus){
+
+    rewardElement.classList.add(
+      "completed"
+    );
+
+  }
+  else{
+
+    rewardElement.classList.remove(
+      "completed"
+    );
+
+  }
+
+  if(!activeBonus){
+
+    rewardElement.innerText =
+      "RÉCOMPENSE : "
+      + currentReward;
+
+  }
 
 }
 
@@ -1010,10 +1084,12 @@ async function incrementDailyClicks(){
 async function checkDailyObjective(){
 
   if(
-    dailyClicks >= dailyGoal
-    &&
-    activeBonus === null
-  ){
+  dailyClicks >= dailyGoal
+  &&
+  activeBonus === null
+  &&
+  rewardClaimed === false
+){
 
     activeBonus =
       currentReward;
@@ -1064,18 +1140,20 @@ async function checkDailyObjective(){
 
     }
 
-    await client
-      .from("daily_objective")
-      .update({
+await client
+  .from("daily_objective")
+  .update({
 
-        active_bonus:
-          currentReward,
+    active_bonus:
+      currentReward,
 
-        bonus_ends_at:
-          bonusEnd
+    bonus_ends_at:
+      bonusEnd,
 
-      })
-      .eq("id",1);
+    reward_claimed: true
+
+  })
+  .eq("id",1);
 
     addFeedMessage(
       "OBJECTIF MONDE ATTEINT : "
@@ -1312,14 +1390,14 @@ function updateTimer(endDate){
   clickMultiplier = 1;
 
   await client
-    .from("daily_objective")
-    .update({
+  .from("daily_objective")
+  .update({
 
-      active_bonus: null,
-      bonus_ends_at: null
+    active_bonus: null,
+    bonus_ends_at: null
 
-    })
-    .eq("id",1);
+  })
+  .eq("id",1);
 
   return;
 
@@ -1449,6 +1527,22 @@ localStorage.setItem(
 );
 
 updateContribution();
+  
+await client
+  .from("players")
+  .upsert({
+
+    pseudo: playerPseudo,
+
+    total_clicks: localClicks,
+
+    updated_at:
+      new Date().toISOString()
+
+  },
+  {
+    onConflict:"pseudo"
+  });
 
   for(
   let i = 0;
@@ -1499,6 +1593,9 @@ else if(heat >= 40){
 else{
 
   heat -= 1;
+  if(heat < 0){
+  heat = 0;
+}
 
 }
 
@@ -1636,11 +1733,20 @@ startBtn.addEventListener("click", async () => {
 
   playerPseudo = pseudo;
 
-  await client
-  .from("player_names")
+await client
+  .from("players")
   .upsert({
+
     pseudo: playerPseudo,
-   updated_at: new Date().toISOString()
+
+    total_clicks: localClicks,
+
+    updated_at:
+      new Date().toISOString()
+
+  },
+  {
+    onConflict:"pseudo"
   });
 
   overlay.style.display = "none";
@@ -1668,10 +1774,65 @@ startBtn.addEventListener("click", async () => {
 
 });
 
+async function syncPlayerData(){
+
+  const pseudo =
+    localStorage.getItem(
+      "pix_pseudo"
+    );
+
+  if(!pseudo){
+    return;
+  }
+
+  const clicks =
+    parseInt(
+      localStorage.getItem(
+        "pix_clicks"
+      )
+    ) || 0;
+
+  const { data: existingPlayer } =
+    await client
+      .from("players")
+      .select("pseudo")
+      .eq("pseudo",pseudo)
+      .single();
+
+  // joueur déjà existant
+
+  if(existingPlayer){
+
+    return;
+
+  }
+
+  // migration localStorage -> supabase
+
+  await client
+    .from("players")
+    .insert({
+
+      pseudo: pseudo,
+
+      total_clicks: clicks,
+
+      updated_at:
+        new Date().toISOString()
+
+    });
+
+  addFeedMessage(
+    pseudo +
+    " rejoint le classement."
+  );
+
+}
+
 async function loadCommunityNames(){
 
   const { data } = await client
-    .from("player_names")
+    .from("players")
     .select("pseudo")
     .limit(20);
 
@@ -1780,6 +1941,56 @@ const rareMessages = [
   "Le combat atteint un nouveau niveau."
 
 ];
+
+async function loadLeaderboard(){
+
+  const { data } = await client
+    .from("players")
+    .select("*")
+    .order(
+      "total_clicks",
+      { ascending:false }
+    )
+    .limit(10);
+
+  if(!data) return;
+
+  const container =
+    document.getElementById(
+      "leaderboardContent"
+    );
+
+  container.innerHTML = "";
+
+  data.forEach((player,index) => {
+
+    container.innerHTML += `
+
+      <div class="leaderboardPlayer">
+
+        <div>
+
+          <span class="leaderboardRank">
+            #${index + 1}
+          </span>
+
+          ${player.pseudo}
+
+        </div>
+
+        <div class="leaderboardClicks">
+
+          ${player.total_clicks} clics
+
+        </div>
+
+      </div>
+
+    `;
+
+  });
+
+}
 
 function launchCommunityFeed(){
 
@@ -1904,9 +2115,18 @@ setInterval(
   1000
 );
 
+syncPlayerData();
+
 loadDailyObjective();
 
 loadGame();
+
+loadLeaderboard();
+
+setInterval(
+  loadLeaderboard,
+  5000
+);
 
 
 
