@@ -1594,6 +1594,9 @@ else if(heat >= 40){
 else{
 
   heat -= 1;
+  if(heat < 0){
+  heat = 0;
+}
 
 }
 
@@ -1732,7 +1735,7 @@ startBtn.addEventListener("click", async () => {
   playerPseudo = pseudo;
 
   await client
-  .from("player_names")
+  .from("players")
   .upsert({
     pseudo: playerPseudo,
    updated_at: new Date().toISOString()
@@ -1809,7 +1812,10 @@ async function syncPlayerData(){
 async function loadCommunityNames(){
 
   const { data } = await client
-    .from("player_names")
+    .from("players")
+    if(!playerPseudo){
+  return;
+}
     .select("pseudo")
     .limit(20);
 
