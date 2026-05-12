@@ -1155,6 +1155,8 @@ await client
   })
   .eq("id",1);
 
+  rewardClaimed = true;
+
     addFeedMessage(
       "OBJECTIF MONDE ATTEINT : "
       + currentReward
@@ -1380,8 +1382,9 @@ function updateTimer(endDate){
 
   if(distance <= 0){
 
-  rewardElement.innerText =
-    "RÉCOMPENSE TERMINÉE";
+rewardElement.innerText =
+  "RÉCOMPENSE : " +
+  currentReward;
 
   activeBonus = null;
 
@@ -1508,8 +1511,6 @@ if(heat >= 70){
   pixel.classList.add("hot");
   pixel.classList.add("overheat");
 
-  clickPower = 0.5;
-
 }
 else{
 
@@ -1544,19 +1545,19 @@ await client
     onConflict:"pseudo"
   });
 
-  for(
-  let i = 0;
-  i < clickMultiplier;
-  i++
-){
+await client.rpc(
+  "increment_world",
+  {
+    amount: clickMultiplier
+  }
+);
 
-  await client.rpc(
-    "increment_world"
-  );
-
-  await incrementDailyClicks();
-
-}
+await client.rpc(
+  "increment_daily_clicks",
+  {
+    amount: clickMultiplier
+  }
+);
 
 if(
   activeBonus ===
@@ -1569,10 +1570,9 @@ if(
 
 }
 
+await loadDailyObjective();
 await checkDailyObjective();
-
-loadGame();
-loadDailyObjective();
+await loadGame();
 
 }
 
