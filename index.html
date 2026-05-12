@@ -1485,12 +1485,13 @@ rewardElement.innerText =
 
   clickMultiplier = 1;
 
-  await client
+await client
   .from("daily_objective")
   .update({
 
     active_bonus: null,
-    bonus_ends_at: null
+    bonus_ends_at: null,
+    reward_claimed: true
 
   })
   .eq("id",1);
@@ -1642,7 +1643,7 @@ const vulnerablePix =
   activeBonus ===
   "PIX VULNÉRABLE — 30MIN";
 
-const { data: clickData } =
+const { data } =
   await client.rpc(
     "process_click",
     {
@@ -1658,27 +1659,29 @@ const { data: clickData } =
 
 // sync instant frontend
 
-if(clickData){
+if(data && data.length > 0){
+
+  const clickData = data[0];
 
   document.getElementById("world")
     .innerText =
-    clickData.world_score;
+    clickData.returned_world_score;
 
   document.getElementById("pix")
     .innerText =
-    clickData.pix_score;
+    clickData.returned_pix_score;
 
   dailyClicks =
-    clickData.daily_clicks;
+    clickData.returned_daily_clicks;
 
   activeBonus =
-    clickData.active_bonus;
+    clickData.returned_active_bonus;
 
   bonusEndsAt =
-    clickData.bonus_ends_at;
+    clickData.returned_bonus_ends_at;
 
   rewardClaimed =
-    clickData.reward_claimed;
+    clickData.returned_reward_claimed;
 
 }
 
