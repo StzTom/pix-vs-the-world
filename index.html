@@ -91,40 +91,144 @@ h1{
 
 #barContainer{
 
-  width:80%;
-  height:40px;
+  position:relative;
 
-  background:#111;
+  width:90%;
 
-  margin:20px auto;
+  height:42px;
 
-  border-radius:20px;
+  margin:22px auto;
+
+  border-radius:30px;
 
   overflow:hidden;
 
-  border:2px solid #333;
+  background:
+    linear-gradient(
+      to right,
+      rgba(0,255,120,0.08),
+      rgba(255,0,0,0.08)
+    );
+
+  border:
+    2px solid rgba(255,255,255,0.08);
+
+  box-shadow:
+    inset 0 0 20px rgba(0,0,0,0.7),
+    0 0 18px rgba(255,255,255,0.05);
 
 }
 
 #bar{
 
   height:100%;
+
   width:50%;
 
-  background:#00ff88;
+  position:relative;
 
-  transition:0.5s;
+  background:
+    linear-gradient(
+      90deg,
+      #00ff88,
+      #00ffd5
+    );
+
+  transition:
+    width 0.6s ease,
+    background 0.4s ease;
 
   box-shadow:
-    0 0 20px #00ff88;
+    0 0 18px rgba(0,255,136,0.7),
+    0 0 35px rgba(0,255,136,0.35);
+
+}
+
+#bar::after{
+
+  content:"";
+
+  position:absolute;
+
+  inset:0;
+
+  background:
+    linear-gradient(
+      120deg,
+      transparent 0%,
+      rgba(255,255,255,0.25) 50%,
+      transparent 100%
+    );
+
+  animation:
+    barFlow 2.2s linear infinite;
+
+}
+
+@keyframes barFlow{
+
+  from{
+    transform:translateX(-100%);
+  }
+
+  to{
+    transform:translateX(100%);
+  }
 
 }
 
 #timer{
 
-  margin-top:8px;
+  margin-top:16px;
 
-  color:#aaa;
+  font-size:34px;
+
+  font-weight:bold;
+
+  letter-spacing:3px;
+
+  color:#ff9f43;
+
+  text-shadow:
+    0 0 10px rgba(255,140,0,0.7),
+    0 0 24px rgba(255,90,0,0.45);
+
+  transition:
+    color 0.5s,
+    text-shadow 0.5s,
+    transform 0.2s;
+
+}
+
+@keyframes timerPulse{
+
+  0%{
+    transform:scale(1);
+  }
+
+  50%{
+    transform:scale(1.04);
+  }
+
+  100%{
+    transform:scale(1);
+  }
+
+}
+
+@keyframes timerDanger{
+
+  0%{
+    transform:scale(1);
+  }
+
+  50%{
+    transform:scale(1.08);
+  }
+
+  100%{
+    transform:scale(1);
+  }
 
 }
 
@@ -560,6 +664,18 @@ h1{
 
 }
 
+#overlayLore{
+
+  color:#9d9d9d;
+
+  line-height:1.7;
+
+  font-size:14px;
+
+  margin-bottom:22px;
+
+}
+
 #pseudoOverlay{
 
   position:fixed;
@@ -582,7 +698,7 @@ h1{
 
   width:85%;
 
-  max-width:320px;
+  max-width:360px;
 
   padding:25px;
 
@@ -749,9 +865,19 @@ h1{
 
   <div id="pseudoBox">
 
-    <h2>Bienvenue dans le Monde</h2>
+    <h2>PIX VS THE WORLD</h2>
 
-    <p>Choisissez votre pseudo</p>
+    <p id="overlayLore">
+
+      Vous faites partie du Monde.<br><br>
+
+      Pix tente progressivement de prendre le contrôle.<br>
+      Chaque clic ralentit sa progression.<br><br>
+
+      Entrez votre pseudo.<br>
+      Rejoignez la résistance.
+
+    </p>
 
     <input
       type="text"
@@ -768,10 +894,6 @@ h1{
 </div>
 
 <h1>Pix vs The World</h1>
-<p id="intro">
-  Vous faites partie du Monde.<br>
-  Empêchez Pix de prendre le contrôle.
-</p>
 
 <h2 id="timer">00j 00h 00m 00s</h2>
 
@@ -981,29 +1103,7 @@ async function loadDailyObjective(){
 
   rewardClaimed = data.reward_claimed;
 
-  // bonus expiré
-
-  if(
-    bonusEndsAt &&
-    new Date(bonusEndsAt) < new Date()
-  ){
-
-    await client
-      .from("daily_objective")
-      .update({
-
-        active_bonus: null,
-        bonus_ends_at: null
-
-      })
-      .eq("id",1);
-
-    activeBonus = null;
-    bonusEndsAt = null;
-
-  }
-
-  // multiplicateur
+ // multiplicateur
 
   clickMultiplier = 1;
 
@@ -1063,106 +1163,23 @@ async function loadDailyObjective(){
 
   }
 
-  if(!activeBonus){
+if(!activeBonus){
+
+  if(rewardClaimed){
 
     rewardElement.innerText =
-      "RÉCOMPENSE : "
-      + currentReward;
+      "RÉCOMPENSE TERMINÉE";
 
   }
+  else{
 
-}
-
-async function incrementDailyClicks(){
-
-  await client.rpc(
-    "increment_daily_clicks"
-  );
-
-}
-
-async function checkDailyObjective(){
-
-  if(
-  dailyClicks >= dailyGoal
-  &&
-  activeBonus === null
-  &&
-  rewardClaimed === false
-){
-
-    activeBonus =
+    rewardElement.innerText =
+      "RÉCOMPENSE : " +
       currentReward;
 
-    let bonusEnd = null;
-
-    if(
-      currentReward.includes("1H")
-    ){
-
-      bonusEnd =
-        new Date(
-          Date.now() + 60*60*1000
-        ).toISOString();
-
-    }
-
-    if(
-      currentReward.includes("15MIN")
-    ){
-
-      bonusEnd =
-        new Date(
-          Date.now() + 15*60*1000
-        ).toISOString();
-
-    }
-
-    if(
-      currentReward.includes("30MIN")
-    ){
-
-      bonusEnd =
-        new Date(
-          Date.now() + 30*60*1000
-        ).toISOString();
-
-    }
-
-    if(
-      currentReward.includes("10MIN")
-    ){
-
-      bonusEnd =
-        new Date(
-          Date.now() + 10*60*1000
-        ).toISOString();
-
-    }
-
-await client
-  .from("daily_objective")
-  .update({
-
-    active_bonus:
-      currentReward,
-
-    bonus_ends_at:
-      bonusEnd,
-
-    reward_claimed: true
-
-  })
-  .eq("id",1);
-
-  rewardClaimed = true;
-
-    addFeedMessage(
-      "OBJECTIF MONDE ATTEINT : "
-      + currentReward
-    );
-
   }
+
+}
 
 }
 
@@ -1204,15 +1221,45 @@ document.getElementById("pixPercent")
 
     // couleur barre
 
-    if(percent > 60){
-      document.getElementById("bar").style.background = "limegreen";
-    }
-    else if(percent > 40){
-      document.getElementById("bar").style.background = "orange";
-    }
-    else{
-      document.getElementById("bar").style.background = "red";
-    }
+    const bar =
+  document.getElementById("bar");
+
+if(percent >= 70){
+
+  bar.style.background =
+    "linear-gradient(90deg,#00ff88,#00ffd5)";
+
+  bar.style.boxShadow =
+    `
+    0 0 20px rgba(0,255,136,0.8),
+    0 0 40px rgba(0,255,136,0.45)
+    `;
+
+}
+else if(percent >= 40){
+
+  bar.style.background =
+    "linear-gradient(90deg,#ffb347,#ff7043)";
+
+  bar.style.boxShadow =
+    `
+    0 0 20px rgba(255,140,0,0.8),
+    0 0 40px rgba(255,90,0,0.45)
+    `;
+
+}
+else{
+
+  bar.style.background =
+    "linear-gradient(90deg,#ff3b3b,#ff003c)";
+
+  bar.style.boxShadow =
+    `
+    0 0 20px rgba(255,0,60,0.8),
+    0 0 40px rgba(255,0,0,0.45)
+    `;
+
+}
 
   }
 
@@ -1320,6 +1367,9 @@ function updateTimer(endDate){
   let distance =
     end - now;
 
+const timer =
+  document.getElementById("timer");
+
   if(distance < 0){
     distance = 0;
   }
@@ -1338,6 +1388,50 @@ function updateTimer(endDate){
   let seconds =
     Math.floor((distance % (1000*60))
     / 1000);
+
+    if(distance <= 3600000){
+
+  timer.style.color = "#ff4444";
+
+  timer.style.textShadow =
+    `
+    0 0 12px rgba(255,50,50,0.9),
+    0 0 30px rgba(255,0,0,0.7),
+    0 0 60px rgba(255,0,0,0.45)
+    `;
+
+  timer.style.animation =
+    "timerDanger 0.7s infinite";
+
+}
+else if(distance <= 21600000){
+
+  timer.style.color = "#ff9f43";
+
+  timer.style.textShadow =
+    `
+    0 0 10px rgba(255,170,0,0.8),
+    0 0 25px rgba(255,120,0,0.5)
+    `;
+
+  timer.style.animation =
+    "timerPulse 1.4s infinite";
+
+}
+else{
+
+  timer.style.color = "#ff9f43";
+
+  timer.style.textShadow =
+    `
+    0 0 10px rgba(255,140,0,0.7),
+    0 0 24px rgba(255,90,0,0.45)
+    `;
+
+  timer.style.animation =
+    "timerPulse 2.5s infinite";
+
+}
 
   document.getElementById("timer")
     .innerText =
@@ -1383,8 +1477,7 @@ function updateTimer(endDate){
   if(distance <= 0){
 
 rewardElement.innerText =
-  "RÉCOMPENSE : " +
-  currentReward;
+  "RÉCOMPENSE TERMINÉE";
 
   activeBonus = null;
 
@@ -1545,33 +1638,51 @@ await client
     onConflict:"pseudo"
   });
 
-await client.rpc(
-  "increment_world",
-  {
-    amount: clickMultiplier
-  }
-);
-
-await client.rpc(
-  "increment_daily_clicks",
-  {
-    amount: clickMultiplier
-  }
-);
-
-if(
+const vulnerablePix =
   activeBonus ===
-  "PIX VULNÉRABLE — 30MIN"
-){
+  "PIX VULNÉRABLE — 30MIN";
 
+const { data: clickData } =
   await client.rpc(
-    "decrement_pix"
+    "process_click",
+    {
+
+      click_amount:
+        clickMultiplier,
+
+      vulnerable_pix:
+        vulnerablePix
+
+    }
   );
+
+// sync instant frontend
+
+if(clickData){
+
+  document.getElementById("world")
+    .innerText =
+    clickData.world_score;
+
+  document.getElementById("pix")
+    .innerText =
+    clickData.pix_score;
+
+  dailyClicks =
+    clickData.daily_clicks;
+
+  activeBonus =
+    clickData.active_bonus;
+
+  bonusEndsAt =
+    clickData.bonus_ends_at;
+
+  rewardClaimed =
+    clickData.reward_claimed;
 
 }
 
 await loadDailyObjective();
-await checkDailyObjective();
 await loadGame();
 
 }
