@@ -1532,7 +1532,7 @@ localStorage.setItem(
 
 updateContribution();
   
-  await client
+await client
   .from("players")
   .upsert({
 
@@ -1543,6 +1543,9 @@ updateContribution();
     updated_at:
       new Date().toISOString()
 
+  },
+  {
+    onConflict:"pseudo"
   });
 
   for(
@@ -1734,11 +1737,20 @@ startBtn.addEventListener("click", async () => {
 
   playerPseudo = pseudo;
 
-  await client
+await client
   .from("players")
   .upsert({
+
     pseudo: playerPseudo,
-   updated_at: new Date().toISOString()
+
+    total_clicks: localClicks,
+
+    updated_at:
+      new Date().toISOString()
+
+  },
+  {
+    onConflict:"pseudo"
   });
 
   overlay.style.display = "none";
