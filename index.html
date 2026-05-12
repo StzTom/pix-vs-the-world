@@ -865,6 +865,8 @@ const client = supabase.createClient(
 
 let gameEnded = false;
 
+let rewardClaimed = false;
+
 let lastPixState = "";
 
 let activeBonus = null;
@@ -968,116 +970,106 @@ async function loadDailyObjective(){
 
   if(!data) return;
 
-  dailyClicks =
-    data.daily_clicks;
+  dailyClicks = data.daily_clicks;
+  dailyGoal = data.daily_goal;
 
-dailyGoal =
-  data.daily_goal;
+  currentReward = data.reward_name;
 
-currentReward =
-  data.reward_name;
+  activeBonus = data.active_bonus;
 
-  activeBonus =
-    data.active_bonus;
+  bonusEndsAt = data.bonus_ends_at;
 
-    bonusEndsAt =
-  data.bonus_ends_at;
-  
+  rewardClaimed = data.reward_claimed;
+
+  // bonus expiré
+
   if(
+    bonusEndsAt &&
+    new Date(bonusEndsAt) < new Date()
+  ){
 
-  bonusEndsAt
-  &&
-  new Date(bonusEndsAt) < new Date()
+    await client
+      .from("daily_objective")
+      .update({
 
-){
+        active_bonus: null,
+        bonus_ends_at: null
 
-  await client
-    .from("daily_objective")
-    .update({
+      })
+      .eq("id",1);
 
-      active_bonus: null,
-      bonus_ends_at: null
+    activeBonus = null;
+    bonusEndsAt = null;
 
-    })
-    .eq("id",1);
+  }
 
-  activeBonus = null;
+  // multiplicateur
 
-  bonusEndsAt = null;
+  clickMultiplier = 1;
 
-}
-    clickMultiplier = 1;
+  if(
+    activeBonus ===
+    "BOOST X2 — 1H"
+  ){
+    clickMultiplier = 2;
+  }
 
-if(
-  activeBonus ===
-  "BOOST X2 — 1H"
-){
+  if(
+    activeBonus ===
+    "BOOST X3 — 15MIN"
+  ){
+    clickMultiplier = 3;
+  }
 
-  clickMultiplier = 2;
+  if(
+    activeBonus ===
+    "RAGE DU MONDE — 10MIN"
+  ){
+    clickMultiplier = 2;
+  }
 
-}
-
-if(
-  activeBonus ===
-  "BOOST X3 — 15MIN"
-){
-
-  clickMultiplier = 3;
-
-}
-
-if(
-  activeBonus ===
-  "RAGE DU MONDE — 10MIN"
-){
-
-  clickMultiplier = 2;
-
-}
   // affichage progression
 
-const displayClicks =
-  Math.min(
-    dailyClicks,
-    dailyGoal
-  );
-
-document.getElementById(
-  "dailyProgress"
-).innerText =
-  displayClicks +
-  " / " +
-  dailyGoal;
-
-const rewardElement =
-  document.getElementById(
-    "dailyReward"
-  );
-
-if(activeBonus){
-
-  rewardElement.classList.add(
-    "completed"
-  );
-
-}
-else{
-
-  rewardElement.classList.remove(
-    "completed"
-  );
-
-}
-
-if(!activeBonus){
+  const displayClicks =
+    Math.min(
+      dailyClicks,
+      dailyGoal
+    );
 
   document.getElementById(
-    "dailyReward"
+    "dailyProgress"
   ).innerText =
-    "RÉCOMPENSE : "
-+ currentReward;
+    displayClicks +
+    " / " +
+    dailyGoal;
 
-}
+  const rewardElement =
+    document.getElementById(
+      "dailyReward"
+    );
+
+  if(activeBonus){
+
+    rewardElement.classList.add(
+      "completed"
+    );
+
+  }
+  else{
+
+    rewardElement.classList.remove(
+      "completed"
+    );
+
+  }
+
+  if(!activeBonus){
+
+    rewardElement.innerText =
+      "RÉCOMPENSE : "
+      + currentReward;
+
+  }
 
 }
 
@@ -1092,10 +1084,12 @@ async function incrementDailyClicks(){
 async function checkDailyObjective(){
 
   if(
-    dailyClicks >= dailyGoal
-    &&
-    activeBonus === null
-  ){
+  dailyClicks >= dailyGoal
+  &&
+  activeBonus === null
+  &&
+  rewardClaimed === false
+){
 
     activeBonus =
       currentReward;
@@ -1146,18 +1140,20 @@ async function checkDailyObjective(){
 
     }
 
-    await client
-      .from("daily_objective")
-      .update({
+await client
+  .from("daily_objective")
+  .update({
 
-        active_bonus:
-          currentReward,
+    active_bonus:
+      currentReward,
 
-        bonus_ends_at:
-          bonusEnd
+    bonus_ends_at:
+      bonusEnd,
 
-      })
-      .eq("id",1);
+    reward_claimed: true
+
+  })
+  .eq("id",1);
 
     addFeedMessage(
       "OBJECTIF MONDE ATTEINT : "
@@ -1394,14 +1390,14 @@ function updateTimer(endDate){
   clickMultiplier = 1;
 
   await client
-    .from("daily_objective")
-    .update({
+  .from("daily_objective")
+  .update({
 
-      active_bonus: null,
-      bonus_ends_at: null
+    active_bonus: null,
+    bonus_ends_at: null
 
-    })
-    .eq("id",1);
+  })
+  .eq("id",1);
 
   return;
 
