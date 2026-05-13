@@ -1038,10 +1038,7 @@ let currentReward = "";
 
 let communityNames = [];
 
-let localClicks =
-  parseInt(
-    localStorage.getItem("pix_clicks")
-  ) || 0;
+let localClicks = 0;
 
 updateContribution();
 
@@ -1385,6 +1382,25 @@ else{
 
 }
 
+async function loadPlayerClicks(){
+
+  const { data } =
+    await client
+      .from("players")
+      .select("total_clicks")
+      .eq("id", playerId)
+      .maybeSingle();
+
+  if(data){
+
+    localClicks =
+      data.total_clicks || 0;
+
+    updateContribution();
+
+  }
+
+}
 // =========================
 // TIMER
 // =========================
@@ -1570,6 +1586,37 @@ let overheated = false;
 const pixel =
   document.getElementById("pixel");
 
+
+async function migrateLocalClicks(){
+
+  const localStoredClicks =
+    parseInt(
+      localStorage.getItem(
+        "pix_clicks"
+      )
+    ) || 0;
+
+  if(localStoredClicks <= 0){
+    return;
+  }
+
+  await client.rpc(
+    "increment_player_clicks",
+    {
+
+      player_uuid: playerId,
+
+      click_value: localStoredClicks
+
+    }
+  );
+
+  localStorage.removeItem(
+    "pix_clicks"
+  );
+
+}  
+
 async function clickPixel(){
 
   if(!playerPseudo){
@@ -1651,30 +1698,27 @@ else{
   // backend
 localClicks += clickMultiplier;
 
-localStorage.setItem(
-  "pix_clicks",
-  localClicks
-);
-
 updateContribution();
   
-await client
-  .from("players")
-  .upsert({
-    
-    id: playerId,
+const { data: updatedClicks } =
+  await client.rpc(
+    "increment_player_clicks",
+    {
 
-    pseudo: playerPseudo,
+      player_uuid: playerId,
 
-    total_clicks: localClicks,
+      click_value: clickMultiplier
 
-    updated_at:
-      new Date().toISOString()
+    }
+  );
 
-  },
-  {
-    onConflict:"id"
-  });
+if(updatedClicks !== null){
+
+  localClicks = updatedClicks;
+
+  updateContribution();
+
+}
 
 const vulnerablePix =
   activeBonus ===
@@ -2288,6 +2332,10 @@ setInterval(
 );
 
 syncPlayerData();
+
+loadPlayerClicks();
+
+migrateLocalClicks();
 
 loadDailyObjective();
 
