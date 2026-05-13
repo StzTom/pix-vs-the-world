@@ -1,14 +1,11 @@
 const MIGRATION_VERSION = "2";
+
 const savedMigration =
   localStorage.getItem(
     "pix_migration_version"
   );
 
 if(savedMigration !== MIGRATION_VERSION){
-
-  localStorage.removeItem(
-    "pix_clicks"
-  );
 
   localStorage.setItem(
     "pix_migration_version",
@@ -81,9 +78,7 @@ let currentReward = "";
 
 let communityNames = [];
 
-let localClicks = 0;
-
-updateContribution();
+let localClicks = null;
 
 if(localClicks === 10){
 
@@ -135,18 +130,24 @@ while(feed.children.length > 3){
 function updateContribution(){
 
   let pseudo =
-    localStorage.getItem("pix_pseudo");
+    localStorage.getItem(
+      "pix_pseudo"
+    );
 
   if(!pseudo){
     pseudo = "Anonyme";
   }
 
-  document.getElementById("contribution")
-    .innerText =
-    "Contribution de " +
-    pseudo +
-    " : " +
-    localClicks +
+  const clicks =
+    localClicks ?? "...";
+
+  document.getElementById(
+    "contribution"
+  ).innerText =
+    "Contribution de "
+    + pseudo +
+    " : "
+    + clicks +
     " clics";
 
 }
@@ -434,6 +435,11 @@ async function loadPlayerClicks(){
       .select("total_clicks")
       .eq("id", playerId)
       .maybeSingle();
+      
+  console.log(
+  "LOADED PLAYER CLICKS:",
+  data
+);
 
   if(data){
 
@@ -755,16 +761,26 @@ localClicks += clickMultiplier;
 
 updateContribution();
   
-const { data: updatedClicks } =
+const { data, error } =
+  await client.rpc(
+    "process_click",
+    {
+      click_amount:
+        clickMultiplier,
+
+      vulnerable_pix:
+        vulnerablePix
+    }
+  );
 
 console.log(
-  "PLAYER ID:",
-  playerId
+  "PROCESS CLICK:",
+  data
 );
 
 console.log(
-  "UPDATED CLICKS:",
-  updatedClicks
+  "PROCESS ERROR:",
+  error
 );
 
   await client.rpc(
@@ -1419,7 +1435,7 @@ setInterval(
   5000
 );
 
-const GAME_VERSION = "1.1.0";
+const GAME_VERSION = "1.1.3";
 
 const savedVersion =
   localStorage.getItem(
