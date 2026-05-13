@@ -31,15 +31,31 @@ let playerId =
 
 if(!playerId){
 
-  playerId =
-    crypto.randomUUID();
+if(
+  window.crypto &&
+  crypto.randomUUID
+)
+
+    playerId =
+      crypto.randomUUID();
+
+  }
+  else{
+
+    playerId =
+      Date.now().toString()
+      +
+      Math.random()
+      .toString(36)
+      .substring(2);
+
+  }
 
   localStorage.setItem(
     "pix_player_id",
     playerId
   );
 
-}
 
 let gameEnded = false;
 
@@ -557,10 +573,7 @@ rewardElement.innerText =
 
   clickMultiplier = 1;
 
-activeBonus = null;
-bonusEndsAt = null;
-clickMultiplier = 1;
-rewarElement.innerText = "RÉCOMPENSE TERMINÉE";    
+rewardElement.innerText = "RÉCOMPENSE TERMINÉE";    
 
   return;
 
@@ -612,6 +625,15 @@ const pixel =
 
 async function migrateLocalClicks(){
 
+const alreadyMigrated =
+  localStorage.getItem(
+    "pix_clicks_migrated"
+  );
+
+if(alreadyMigrated){
+  return;
+}
+
   const localStoredClicks =
     parseInt(
       localStorage.getItem(
@@ -637,6 +659,11 @@ async function migrateLocalClicks(){
   localStorage.removeItem(
     "pix_clicks"
   );
+
+  localStorage.setItem(
+  "pix_clicks_migrated",
+  "true"
+);
 
 }  
 
@@ -945,13 +972,6 @@ pseudo =
     alert("Pseudo invalide."); 
    
     return;}
-
- 
-
-  localStorage.setItem(
-    "pix_pseudo",
-    pseudo
-  );
   
   const { data: existingPseudo } = 
     
@@ -968,6 +988,11 @@ pseudo =
     alert( "Pseudo déjà utilisé." ); 
    
    return;}
+
+  localStorage.setItem(
+    "pix_pseudo",
+    pseudo
+  );
 
   const oldPseudo = playerPseudo;
 
@@ -991,28 +1016,32 @@ await client
     onConflict:"id"
   });
 
-  overlay.style.display = "none";
+overlay.style.display = "none";
 
-  updateContribution();
+updateContribution();
 
-  if(oldPseudo){
+if(
+  oldPseudo
+  &&
+  oldPseudo !== pseudo
+){
 
-    addFeedMessage(
-      oldPseudo +
-      " est devenu " +
-      pseudo +
-      "."
-    );
+  addFeedMessage(
+    oldPseudo +
+    " est devenu " +
+    pseudo +
+    "."
+  );
 
-  }
-  else{
+}
+else{
 
-    addFeedMessage(
-      pseudo +
-      " a rejoint nos rangs."
-    );
+  addFeedMessage(
+    pseudo +
+    " a rejoint nos rangs."
+  );
 
-  }
+}
 
 });
 
@@ -1354,24 +1383,30 @@ setInterval(
   1000
 );
 
-syncPlayerData();
+async function initGame(){
 
-loadPlayerClicks();
+  await syncPlayerData();
 
-migrateLocalClicks();
+  await migrateLocalClicks();
 
-loadDailyObjective();
+  await loadPlayerClicks();
 
-loadGame();
+  await loadDailyObjective();
 
-loadLeaderboard();
+  await loadGame();
+
+  await loadLeaderboard();
+
+}
+
+initGame();
 
 setInterval(
   loadLeaderboard,
   5000
 );
 
-const GAME_VERSION = "1.0.7";
+const GAME_VERSION = "1.0.9";
 
 const savedVersion =
   localStorage.getItem(
@@ -1380,7 +1415,7 @@ const savedVersion =
 
 if(savedVersion !== GAME_VERSION){
 
-  localStorage.clear();
+localStorage.removeItem("pix_clicks");
 
   localStorage.setItem(
     "pix_game_version",
