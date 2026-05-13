@@ -1485,16 +1485,10 @@ rewardElement.innerText =
 
   clickMultiplier = 1;
 
-await client
-  .from("daily_objective")
-  .update({
-
-    active_bonus: null,
-    bonus_ends_at: null,
-    reward_claimed: true
-
-  })
-  .eq("id",1);
+activeBonus = null;
+bonusEndsAt = null;
+clickMultiplier = 1;
+rewarElement.innerText = "RÉCOMPENSE TERMINÉE";    
 
   return;
 
