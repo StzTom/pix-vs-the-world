@@ -988,6 +988,21 @@ const client = supabase.createClient(
   SUPABASE_KEY
 );
 
+let playerId =
+  localStorage.getItem("pix_player_id");
+
+if(!playerId){
+
+  playerId =
+    crypto.randomUUID();
+
+  localStorage.setItem(
+    "pix_player_id",
+    playerId
+  );
+
+}
+
 let gameEnded = false;
 
 let rewardClaimed = false;
@@ -1623,6 +1638,8 @@ updateContribution();
 await client
   .from("players")
   .upsert({
+    
+    id: playerId,
 
     pseudo: playerPseudo,
 
@@ -1633,7 +1650,7 @@ await client
 
   },
   {
-    onConflict:"pseudo"
+    onConflict:"id"
   });
 
 const vulnerablePix =
@@ -1830,7 +1847,9 @@ startBtn.addEventListener("click", async () => {
 
   let pseudo =
     input.value.trim();
-
+pseudo =
+  pseudo.replace(/[^a-zA-Z0-9_-]/g,"");
+  
   if(pseudo.length < 3){
     return;
   }
@@ -1843,10 +1862,27 @@ startBtn.addEventListener("click", async () => {
   );
 
   playerPseudo = pseudo;
+  
+  const { data: existingPseudo } = 
+    
+    await client .from("players") 
+    
+    .select("id") 
+    
+    .eq("pseudo", pseudo) 
+    .neq("id", playerId) 
+    .maybeSingle();
+  if(existingPseudo)
+  { alert( "Pseudo déjà utilisé." ); 
+   
+   return;}
 
 await client
+  
   .from("players")
   .upsert({
+
+    id: playerId,
 
     pseudo: playerPseudo,
 
@@ -1857,7 +1893,7 @@ await client
 
   },
   {
-    onConflict:"pseudo"
+    onConflict:"id"
   });
 
   overlay.style.display = "none";
@@ -1906,23 +1942,19 @@ async function syncPlayerData(){
   const { data: existingPlayer } =
     await client
       .from("players")
-      .select("pseudo")
-      .eq("pseudo",pseudo)
-      .single();
-
-  // joueur déjà existant
+      .select("id")
+      .eq("id", playerId)
+      .maybeSingle();
 
   if(existingPlayer){
-
     return;
-
   }
-
-  // migration localStorage -> supabase
 
   await client
     .from("players")
     .insert({
+
+      id: playerId,
 
       pseudo: pseudo,
 
@@ -2253,7 +2285,10 @@ if(savedVersion !== GAME_VERSION){
     GAME_VERSION
   );
 
-  window.location.reload(true);
+  window.location.href =
+  window.location.pathname +
+  "?v=" +
+  GAME_VERSION;
 
 }
 
