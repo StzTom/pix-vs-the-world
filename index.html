@@ -980,6 +980,21 @@ h1{
 
 <script>
 
+window.addEventListener(
+  "pageshow",
+  function(event){
+
+    if(
+      event.persisted
+    ){
+
+      window.location.reload();
+
+    }
+
+  }
+);
+
 const SUPABASE_URL = "https://tijjbqrjeagbeepfjtbf.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpampicXJqZWFnYmVlcGZqdGJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5OTAwNzQsImV4cCI6MjA5MzU2NjA3NH0.gnkTBKQkxHXdzQikzBRvpIXDJvfWsaHt5BMeB0zJgqw";
 
@@ -2285,7 +2300,7 @@ setInterval(
   5000
 );
 
-const GAME_VERSION = "1.0.5";
+const GAME_VERSION = "1.0.6";
 
 const savedVersion =
   localStorage.getItem(
@@ -2294,15 +2309,17 @@ const savedVersion =
 
 if(savedVersion !== GAME_VERSION){
 
+  localStorage.clear();
+
   localStorage.setItem(
     "pix_game_version",
     GAME_VERSION
   );
 
   window.location.href =
-  window.location.pathname +
-  "?v=" +
-  GAME_VERSION;
+    window.location.pathname 
+    "?v=" +
+    GAME_VERSION;
 
 }
 
