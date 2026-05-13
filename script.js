@@ -27,14 +27,17 @@ const client = supabase.createClient(
 );
 
 let playerId =
-  localStorage.getItem("pix_player_id");
+  localStorage.getItem(
+    "pix_player_id"
+  );
 
 if(!playerId){
 
-if(
-  window.crypto &&
-  crypto.randomUUID
-)
+  if(
+    window.crypto
+    &&
+    crypto.randomUUID
+  ){
 
     playerId =
       crypto.randomUUID();
@@ -56,6 +59,7 @@ if(
     playerId
   );
 
+}
 
 let gameEnded = false;
 
@@ -153,28 +157,29 @@ function updateContribution(){
 
 async function loadDailyObjective(){
 
-  const { data } = await client
-    .from("daily_objective")
-    .select("*")
-    .eq("id",1)
-    .single();
+const { data: updatedClicks, error } =
+  await client.rpc(
+    "increment_player_clicks",
+    {
+      player_uuid: playerId,
+      click_value: clickMultiplier
+    }
+  );
 
-  if(!data) return;
+console.log(
+  "PLAYER ID:",
+  playerId
+);
 
-  dailyClicks = data.daily_clicks;
-  dailyGoal = data.daily_goal;
+console.log(
+  "UPDATED CLICKS:",
+  updatedClicks
+);
 
-  currentReward = data.reward_name;
-
-  activeBonus = data.active_bonus;
-
-  bonusEndsAt = data.bonus_ends_at;
-
-  rewardClaimed = data.reward_claimed;
-
- // multiplicateur
-
-  clickMultiplier = 1;
+console.log(
+  "RPC ERROR:",
+  error
+);
 
   if(
     activeBonus ===
@@ -751,6 +756,17 @@ localClicks += clickMultiplier;
 updateContribution();
   
 const { data: updatedClicks } =
+
+console.log(
+  "PLAYER ID:",
+  playerId
+);
+
+console.log(
+  "UPDATED CLICKS:",
+  updatedClicks
+);
+
   await client.rpc(
     "increment_player_clicks",
     {
@@ -1056,12 +1072,7 @@ async function syncPlayerData(){
     return;
   }
 
-  const clicks =
-    parseInt(
-      localStorage.getItem(
-        "pix_clicks"
-      )
-    ) || 0;
+const clicks = 0;
 
   const { data: existingPlayer } =
     await client
@@ -1385,17 +1396,19 @@ setInterval(
 
 async function initGame(){
 
+  await loadPlayerClicks();
+
   await syncPlayerData();
 
   await migrateLocalClicks();
-
-  await loadPlayerClicks();
 
   await loadDailyObjective();
 
   await loadGame();
 
   await loadLeaderboard();
+
+  updateContribution();
 
 }
 
@@ -1406,7 +1419,7 @@ setInterval(
   5000
 );
 
-const GAME_VERSION = "1.0.9";
+const GAME_VERSION = "1.1.0";
 
 const savedVersion =
   localStorage.getItem(
@@ -1414,8 +1427,6 @@ const savedVersion =
   );
 
 if(savedVersion !== GAME_VERSION){
-
-localStorage.removeItem("pix_clicks");
 
   localStorage.setItem(
     "pix_game_version",
