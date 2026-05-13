@@ -1,17 +1,22 @@
-window.addEventListener(
-  "pageshow",
-  function(event){
+const MIGRATION_VERSION = "2";
+const savedMigration =
+  localStorage.getItem(
+    "pix_migration_version"
+  );
 
-    if(
-      event.persisted
-    ){
+if(savedMigration !== MIGRATION_VERSION){
 
-      window.location.reload();
+  localStorage.removeItem(
+    "pix_clicks"
+  );
 
-    }
+  localStorage.setItem(
+    "pix_migration_version",
+    MIGRATION_VERSION
+  );
 
-  }
-);
+}
+
 
 const SUPABASE_URL = "https://tijjbqrjeagbeepfjtbf.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpampicXJqZWFnYmVlcGZqdGJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5OTAwNzQsImV4cCI6MjA5MzU2NjA3NH0.gnkTBKQkxHXdzQikzBRvpIXDJvfWsaHt5BMeB0zJgqw";
@@ -1366,7 +1371,7 @@ setInterval(
   5000
 );
 
-const GAME_VERSION = "1.0.6";
+const GAME_VERSION = "1.0.7";
 
 const savedVersion =
   localStorage.getItem(
