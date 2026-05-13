@@ -1952,7 +1952,7 @@ async function syncPlayerData(){
 
   await client
     .from("players")
-    .insert({
+    .upsert({
 
       id: playerId,
 
