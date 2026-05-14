@@ -94,6 +94,626 @@ let communityNames = [];
 
 let localClicks = 0;
 
+let playerBonus = null;
+
+let playerBonusMultiplier = 1;
+
+let playerBonusEndsAt = null;
+
+let nextBonusAt = null;
+
+function getFinalMultiplier()
+{
+
+  return (
+    clickMultiplier *
+    playerBonusMultiplier
+  );
+
+}
+const playerBonusPool = [
+
+  // COMMUN
+
+  {
+    type: "instant",
+    clicks: 1000,
+    weight: 35
+  },
+
+  {
+    type: "instant",
+    clicks: 1500,
+    weight: 25
+  },
+
+  {
+    type: "multiplier",
+    multiplier: 2,
+    duration: 300,
+    label: "BOOST X2",
+    weight: 20
+  },
+
+  {
+    type: "multiplier",
+    multiplier: 2,
+    duration: 600,
+    label: "BOOST X2",
+    weight: 10
+  },
+
+  // PEU COMMUN
+
+  {
+    type: "instant",
+    clicks: 2000,
+    weight: 5
+  },
+
+  {
+    type: "multiplier",
+    multiplier: 3,
+    duration: 300,
+    label: "BOOST X3",
+    weight: 3
+  },
+
+  // RARE
+
+  {
+    type: "multiplier",
+    multiplier: 3,
+    duration: 900,
+    label: "BOOST X3",
+    weight: 1.5
+  },
+
+  // EPIC
+
+  {
+    type: "multiplier",
+    multiplier: 3,
+    duration: 1800,
+    label: "BOOST X3",
+    weight: 0.5
+  }
+
+];
+
+function getBonusRarity(bonus)
+{
+
+  if(
+    bonus.multiplier === 3
+    &&
+    bonus.duration >= 1800
+  ){
+    return "epic";
+  }
+
+  if(
+    bonus.multiplier === 3
+    &&
+    bonus.duration >= 900
+  ){
+    return "ultra";
+  }
+
+  if(
+    bonus.multiplier === 3
+    ||
+    bonus.duration >= 600
+  ){
+    return "rare";
+  }
+
+  if(
+    bonus.clicks >= 2000
+  ){
+    return "rare";
+  }
+
+  return "common";
+
+}
+
+function rollPlayerBonus()
+{
+
+  const totalWeight =
+    playerBonusPool.reduce(
+      (sum,bonus) =>
+        sum + bonus.weight,
+      0
+    );
+
+  let random =
+    Math.random() * totalWeight;
+
+  for(const bonus of playerBonusPool){
+
+    random -= bonus.weight;
+
+    if(random <= 0){
+
+      return bonus;
+
+    }
+
+  }
+
+}
+
+function formatTime(ms)
+{
+
+  if(ms <= 0){
+    return "00h00m00s";
+  }
+
+  const hours =
+    Math.floor(
+      ms / (1000*60*60)
+    );
+
+  const minutes =
+    Math.floor(
+      (ms % (1000*60*60))
+      / (1000*60)
+    );
+
+  const seconds =
+    Math.floor(
+      (ms % (1000*60))
+      / 1000
+    );
+
+  return (
+    String(hours).padStart(2,"0")
+    + "h" +
+    String(minutes).padStart(2,"0")
+    + "m" +
+    String(seconds).padStart(2,"0")
+    + "s"
+  );
+
+}
+
+function spawnFloatingMultiplier(multiplier)
+{
+
+  if(multiplier <= 1){
+    return;
+  }
+
+  const container =
+    document.getElementById(
+      "floatingMultipliers"
+    );
+
+  const div =
+    document.createElement("div");
+
+  div.classList.add(
+    "floatingMultiplier"
+  );
+
+  div.innerText =
+    "x" + multiplier;
+
+  // couleurs selon puissance
+
+  if(multiplier >= 9){
+
+    div.classList.add(
+      "multiplier-x9"
+    );
+
+  }
+  else if(multiplier >= 6){
+
+    div.classList.add(
+      "multiplier-x6"
+    );
+
+  }
+  else if(multiplier >= 3){
+
+    div.classList.add(
+      "multiplier-x3"
+    );
+
+  }
+  else{
+
+    div.classList.add(
+      "multiplier-x2"
+    );
+
+  }
+
+  // variation horizontale
+
+  const randomX =
+    Math.floor(
+      Math.random() * 80
+    ) - 40;
+
+  div.style.setProperty(
+    "--x",
+    randomX + "px"
+  );
+
+  container.appendChild(div);
+
+  setTimeout(() => {
+
+    div.remove();
+
+  },900);
+
+}
+
+async function claimPlayerBonus()
+{
+
+  const now =
+    Date.now();
+
+  // cooldown
+
+  if(nextBonusAt){
+
+    const next =
+      new Date(nextBonusAt).getTime();
+
+    if(now < next){
+
+      addFeedMessage(
+        "Bonus indisponible."
+      );
+
+      return;
+
+    }
+
+  }
+
+  const rolledBonus =
+    rollPlayerBonus();
+
+  const rarity =
+    getBonusRarity(
+      rolledBonus
+    );
+
+  // =========================
+  // BONUS INSTANT
+  // =========================
+
+ if(
+  rolledBonus.type === "instant"
+)
+{
+
+  localClicks +=
+    rolledBonus.clicks;
+
+  updateContribution();
+
+  await client.rpc(
+    "increment_player_clicks",
+    {
+      player_uuid: playerId,
+      click_value:
+        rolledBonus.clicks
+    }
+  );
+
+  let feedType = "bonus";
+
+  if(rarity === "rare"){
+    feedType = "rare";
+  }
+
+  if(
+    rarity === "ultra"
+    ||
+    rarity === "epic"
+  ){
+    feedType = "epic";
+  }
+
+  addFeedMessage(
+    "+" +
+    rolledBonus.clicks +
+    " clics bonus",
+    feedType
+  );
+
+}
+
+
+  // =========================
+  // BONUS MULTIPLIER
+  // =========================
+
+  else
+    {
+
+    playerBonus =
+      rolledBonus.label;
+
+    playerBonusMultiplier =
+      rolledBonus.multiplier;
+
+    playerBonusEndsAt =
+      new Date(
+        now
+        +
+        rolledBonus.duration * 1000
+      ).toISOString();
+
+   let feedType = "bonus";
+
+if(rarity === "rare"){
+  feedType = "rare";
+}
+
+if(
+  rarity === "ultra"
+  ||
+  rarity === "epic"
+){
+  feedType = "epic";
+}
+
+addFeedMessage(
+  rolledBonus.label +
+  " ACTIVÉ",
+  feedType
+);
+
+  }
+
+  if(rarity === "epic"){
+
+  addFeedMessage(
+    "⚡ BONUS ÉPIQUE OBTENU"
+  );
+
+}
+
+document.body.classList.add(
+  "epicFlash"
+);
+
+setTimeout(() => {
+
+  document.body.classList.remove(
+    "epicFlash"
+  );
+
+},600);
+
+  // cooldown 4h
+
+  nextBonusAt =
+    new Date(
+      now +
+      4 * 60 * 60 * 1000
+    ).toISOString();
+
+  // save
+
+  await client
+    .from("players")
+    .update({
+
+      player_bonus:
+        playerBonus,
+
+      player_bonus_multiplier:
+        playerBonusMultiplier,
+
+      player_bonus_ends_at:
+        playerBonusEndsAt,
+
+      next_bonus_at:
+        nextBonusAt,
+
+      updated_at:
+        new Date().toISOString()
+
+    })
+    .eq("id", playerId);
+
+  // effet rareté
+
+  const bonusButton =
+    document.getElementById(
+      "bonusButton"
+    );
+
+  bonusButton.className = "";
+
+  bonusButton.classList.add(
+    rarity
+  );
+
+  updatePlayerBonusUI();
+
+}
+
+function updatePlayerBonusUI()
+{
+
+  const powerUpName =
+  document.getElementById(
+    "powerUpName"
+  );
+
+const powerUpTimer =
+  document.getElementById(
+    "powerUpTimer"
+  );
+
+  const bonusButton =
+    document.getElementById(
+      "bonusButton"
+    );
+
+  const now =
+    Date.now();
+
+  // =========================
+  // BONUS DISPONIBLE
+  // =========================
+
+  if(
+    !nextBonusAt
+    ||
+    now >= new Date(nextBonusAt).getTime()
+  ){
+
+    bonusButton.innerText =
+      "BONUS";
+
+    bonusButton.classList.add(
+      "ready"
+    );
+
+  }
+
+  // =========================
+  // BONUS EN COOLDOWN
+  // =========================
+
+  else{
+
+    const remaining =
+      new Date(nextBonusAt).getTime()
+      - now;
+
+    bonusButton.innerText =
+      formatTime(remaining);
+
+    bonusButton.classList.remove(
+      "ready"
+    );
+
+  }
+
+  // =========================
+  // POWER UP ACTIF
+  // =========================
+
+  if(
+    playerBonus
+    &&
+    playerBonusEndsAt
+  ){
+
+    const remaining =
+      new Date(
+        playerBonusEndsAt
+      ).getTime() - now;
+
+    // terminé
+
+    if(remaining <= 0){
+
+      playerBonus = null;
+
+      playerBonusMultiplier = 1;
+
+      playerBonusEndsAt = null;
+
+      powerUpName.innerText =
+        "Aucun Power Up";
+
+    }
+
+    else{
+
+      powerUpName.innerText =
+  playerBonus;
+
+     powerUpTimer.innerText =
+  formatTime(remaining);
+
+    }
+
+  }
+
+  else{
+
+  powerUpName.innerText =
+  "Aucun";
+
+   powerUpTimer.innerText =
+  "--";
+
+  }
+
+  // =========================
+  // STACK VISUEL
+  // =========================
+
+  const finalMultiplier =
+    getFinalMultiplier();
+
+  if(finalMultiplier >= 6){
+
+    powerUpName.style.color =
+  "#ff4dff";
+
+powerUpName.classList.add(
+  "powerStackMax"
+);
+    powerUpName.style.textShadow =
+      "0 0 14px #ff4dff";
+
+  }
+
+  else if(finalMultiplier >= 3){
+
+    powerUpName.style.color =
+      "#ff9f43";
+
+    powerUpName.style.textShadow =
+      "0 0 12px #ff9f43";
+
+      
+
+  }
+
+  else{
+
+    powerUpName.style.color =
+      "white";
+
+    powerUpName.style.textShadow =
+      "none";
+
+    powerUpName.classList.remove(
+  "powerStackMax"
+);
+
+  }
+
+}
+
+document
+  .getElementById(
+    "bonusButton"
+  )
+  .addEventListener(
+    "click",
+    claimPlayerBonus
+  );
+
 if(localClicks === 10){
 
   addFeedMessage(
@@ -121,24 +741,38 @@ if(localClicks === 500){
 const feed =
   document.getElementById("liveFeed");
 
-function addFeedMessage(message){
+function addFeedMessage(
+  message,
+  type = "normal"
+){
 
   const div =
     document.createElement("div");
 
-  div.classList.add("feedMessage");
+  div.classList.add(
+    "feedMessage"
+  );
+
+  if(type !== "normal"){
+
+    div.classList.add(
+      "feed-" + type
+    );
+
+  }
 
   div.innerText = message;
 
   feed.prepend(div);
 
-  // max 3 messages
+  while(feed.children.length > 3){
 
-while(feed.children.length > 3){
+    feed.removeChild(
+      feed.lastChild
+    );
 
-  feed.removeChild(feed.lastChild);
+  }
 
-}
 }
 
 function updateContribution(){
@@ -223,11 +857,20 @@ async function loadDailyObjective(){
       "dailyReward"
     );
 
-  if(
-    rewardClaimed
-    &&
-    !activeBonus
-  ){
+ if(activeBonus){
+
+  rewardElement.classList.add(
+    "completed"
+  );
+
+}
+else{
+
+  rewardElement.classList.remove(
+    "completed"
+  );
+
+  if(rewardClaimed){
 
     rewardElement.innerText =
       "RÉCOMPENSE TERMINÉE";
@@ -236,71 +879,14 @@ async function loadDailyObjective(){
   else{
 
     rewardElement.innerText =
-      "RÉCOMPENSE : " +
-      currentReward;
+      "RÉCOMPENSE : "
+      + currentReward;
 
   }
 
 }
-  // affichage progression
-
-  const displayClicks =
-    Math.min(
-      dailyClicks,
-      dailyGoal
-    );
-
-  document.getElementById(
-    "dailyProgress"
-  ).innerText =
-    displayClicks +
-    " / " +
-    dailyGoal;
-
-  const rewardElement =
-    document.getElementById(
-      "dailyReward"
-    );
-
-  if(activeBonus){
-
-    rewardElement.classList.add(
-      "completed"
-    );
-
-  }
-  else{
-
-    rewardElement.classList.remove(
-      "completed"
-    );
-
-  }
-
-if(
-  rewardClaimed
-  &&
-  !activeBonus
-){
-
-  rewardElement.innerText =
-    "RÉCOMPENSE TERMINÉE";
 
 }
-else if(!activeBonus){
-
-  rewardElement.innerText =
-    "RÉCOMPENSE : " +
-    currentReward;
-
-}
-  else{
-
-    rewardElement.innerText =
-      "RÉCOMPENSE : " +
-      currentReward;
-
-  }
 
 async function loadGame() {
 
@@ -476,7 +1062,13 @@ async function loadPlayerClicks(){
   const { data, error: playerError } =
     await client
       .from("players")
-      .select("total_clicks")
+      .select(`
+  total_clicks,
+  player_bonus,
+  player_bonus_multiplier,
+  player_bonus_ends_at,
+  next_bonus_at
+`)
       .eq("id", playerId)
       .maybeSingle();
 
@@ -493,6 +1085,17 @@ if(data){
 
   localClicks =
     data.total_clicks || 0;
+    playerBonus =
+  data.player_bonus;
+
+   playerBonusMultiplier =
+  data.player_bonus_multiplier || 1;
+
+   playerBonusEndsAt =
+  data.player_bonus_ends_at;
+
+   nextBonusAt =
+  data.next_bonus_at;
 
 }
 else{
@@ -875,7 +1478,14 @@ else{
 
 // backend
 
-localClicks += clickMultiplier;
+const finalMultiplier =
+  getFinalMultiplier();
+
+  spawnFloatingMultiplier(
+  finalMultiplier
+);
+
+localClicks += finalMultiplier;
 
 updateContribution();
 
@@ -892,7 +1502,7 @@ const {
   "increment_player_clicks",
   {
     player_uuid: playerId,
-    click_value: clickMultiplier
+    click_value: finalMultiplier
   }
 );
 
@@ -924,7 +1534,7 @@ const {
 } = await client.rpc(
   "process_click",
   {
-    click_amount: clickMultiplier,
+    click_amount: finalMultiplier,
     vulnerable_pix: vulnerablePix
   }
 );
@@ -935,8 +1545,8 @@ console.log(
 );
 
 console.log(
-  "SYNC ERROR FULL:",
-  JSON.stringify(Error)
+  "PROCESS ERROR:",
+  processError
 );
 
 // sync ui
@@ -1566,11 +2176,18 @@ setInterval(
   1000
 );
 
+setInterval(
+  updatePlayerBonusUI,
+  1000
+);
+
 async function initGame(){
 
   await migrateLocalClicks();
 
   await loadPlayerClicks();
+
+  updatePlayerBonusUI();
 
   updateContribution();
 
@@ -1589,7 +2206,7 @@ setInterval(
   5000
 );
 
-const GAME_VERSION = "1.1.3";
+const GAME_VERSION = "1.1.4";
 
 const savedVersion =
   localStorage.getItem(

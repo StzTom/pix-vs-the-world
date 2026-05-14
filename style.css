@@ -397,7 +397,8 @@ h1{
 
 }
 
-@media(max-width:700px){
+@media(max-width:700px)
+{
 
   h1{
     font-size:38px;
@@ -843,3 +844,602 @@ h1{
   color:#999;
 
 }
+
+/* =========================
+COMBAT ROW
+========================= */
+
+#combatRow{
+
+  width:100%;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:space-between;
+
+  gap:16px;
+
+  margin-top:22px;
+
+  padding:0 16px;
+
+  box-sizing:border-box;
+
+}
+
+/* =========================
+POWER BOX + BONUS BOX
+========================= */
+
+#powerUpBox,
+#bonusButton{
+
+  width:92px;
+  height:92px;
+
+  flex-shrink:0;
+
+  border-radius:20px;
+
+  display:flex;
+
+  align-items:center;
+  justify-content:center;
+
+  padding:10px;
+
+  box-sizing:border-box;
+
+  position:relative;
+
+  overflow:hidden;
+
+  backdrop-filter:blur(8px);
+
+  transition:
+    transform 0.25s,
+    box-shadow 0.25s,
+    border 0.25s,
+    background 0.25s;
+
+}
+
+/* =========================
+POWER UP BOX
+========================= */
+
+#powerUpBox{
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(0,255,225,0.08),
+      rgba(255,255,255,0.03)
+    );
+
+  border:
+    1px solid rgba(0,255,225,0.18);
+
+  box-shadow:
+    0 0 18px rgba(0,255,225,0.12),
+    inset 0 0 18px rgba(255,255,255,0.03);
+
+  flex-direction:column;
+
+}
+
+#powerUpBox{
+
+  width:120px;
+  height:90px;
+
+  flex-shrink:0;
+
+  display:flex;
+
+  flex-direction:column;
+
+  align-items:center;
+
+  justify-content:center;
+
+  gap:4px;
+
+  padding:10px;
+
+  border-radius:18px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,0.06),
+      rgba(255,255,255,0.03)
+    );
+
+  border:
+    1px solid rgba(255,255,255,0.12);
+
+  box-shadow:
+    0 0 18px rgba(255,255,255,0.04);
+
+  box-sizing:border-box;
+
+}
+
+#powerUpName{
+
+  font-size:15px;
+
+  font-weight:bold;
+
+  color:white;
+
+  text-align:center;
+
+  line-height:1.1;
+
+}
+
+#powerUpTimer{
+
+  font-size:13px;
+
+  color:#00ffe1;
+
+  text-shadow:
+    0 0 10px rgba(0,255,225,0.45);
+
+  letter-spacing:1px;
+
+}
+
+.powerTitle{
+
+  font-size:10px;
+
+  letter-spacing:2px;
+
+  color:#00ffe1;
+
+  opacity:0.7;
+
+  margin-bottom:6px;
+
+}
+
+#powerUpText{
+
+  font-size:11px;
+
+  line-height:1.35;
+
+  color:white;
+
+  text-align:center;
+
+  transition:0.25s;
+
+}
+
+/* =========================
+BONUS BUTTON
+========================= */
+
+#bonusButton{
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,180,0,0.14),
+      rgba(255,120,0,0.05)
+    );
+
+  border:
+    1px solid rgba(255,190,0,0.22);
+
+  color:white;
+
+  font-size:12px;
+  font-weight:bold;
+
+  text-align:center;
+
+  cursor:pointer;
+
+  box-shadow:
+    0 0 18px rgba(255,180,0,0.14),
+    inset 0 0 20px rgba(255,255,255,0.02);
+
+}
+
+/* hover */
+
+#bonusButton:hover{
+
+  transform:translateY(-2px) scale(1.04);
+
+}
+
+/* =========================
+BONUS READY
+========================= */
+
+#bonusButton.ready{
+
+  animation:
+    bonusReadyPulse 2s infinite;
+
+  border-color:#00ffe1;
+
+  box-shadow:
+    0 0 18px rgba(0,255,225,0.45),
+    0 0 40px rgba(0,255,225,0.18);
+
+}
+
+/* =========================
+RARETIES
+========================= */
+
+#bonusButton.common{
+
+  border-color:#9d9d9d;
+
+}
+
+#bonusButton.rare{
+
+  border-color:#3ba7ff;
+
+  box-shadow:
+    0 0 18px rgba(59,167,255,0.55);
+
+}
+
+#bonusButton.ultra{
+
+  border-color:#c13bff;
+
+  box-shadow:
+    0 0 22px rgba(193,59,255,0.75);
+
+}
+
+#bonusButton.epic{
+
+  border-color:#ffae00;
+
+  box-shadow:
+    0 0 30px rgba(255,174,0,0.95);
+
+}
+
+/* =========================
+READY PULSE
+========================= */
+
+@keyframes bonusReadyPulse{
+
+  0%{
+
+    transform:scale(1);
+
+    box-shadow:
+      0 0 14px rgba(0,255,225,0.18);
+
+  }
+
+  50%{
+
+    transform:scale(1.06);
+
+    box-shadow:
+      0 0 28px rgba(0,255,225,0.45);
+
+  }
+
+  100%{
+
+    transform:scale(1);
+
+    box-shadow:
+      0 0 14px rgba(0,255,225,0.18);
+
+  }
+
+}
+
+/* =========================
+STACK MAX
+========================= */
+
+.powerStackMax{
+
+  animation:
+    powerMaxPulse 1s infinite;
+
+}
+
+@keyframes powerMaxPulse{
+
+  0%{
+    transform:scale(1);
+  }
+
+  50%{
+    transform:scale(1.06);
+  }
+
+  100%{
+    transform:scale(1);
+  }
+
+}
+
+/* =========================
+MOBILE
+========================= */
+
+@media(max-width:700px){
+
+  #combatRow{
+
+    padding:0 8px;
+
+    gap:10px;
+
+  }
+
+  #powerUpBox,
+  #bonusButton{
+
+    width:78px;
+    height:78px;
+
+    border-radius:18px;
+
+  }
+
+  #powerUpText{
+
+    font-size:10px;
+
+  }
+
+  #bonusButton{
+
+    font-size:11px;
+
+  }
+
+}
+
+.epicFlash{
+
+  animation:
+    epicScreenFlash 0.6s;
+
+}
+
+@keyframes epicScreenFlash{
+
+  0%{
+    filter:brightness(1);
+  }
+
+  30%{
+    filter:brightness(1.35);
+  }
+
+  100%{
+    filter:brightness(1);
+  }
+
+}
+
+/* =========================
+FLOATING MULTIPLIERS
+========================= */
+
+#floatingMultipliers{
+
+  position:absolute;
+
+  left:50%;
+  top:50%;
+
+  pointer-events:none;
+
+}
+
+.floatingMultiplier{
+
+  position:absolute;
+
+  font-weight:bold;
+
+  font-size:24px;
+
+  animation:
+    floatMultiplier 0.9s forwards;
+
+  text-shadow:
+    0 0 12px currentColor;
+
+  white-space:nowrap;
+
+}
+
+/* couleurs */
+
+.multiplier-x2{
+
+  color:#00ffe1;
+
+}
+
+.multiplier-x3{
+
+  color:#ff9f43;
+
+}
+
+.multiplier-x6{
+
+  color:#c13bff;
+
+}
+
+.multiplier-x9{
+
+  color:#ff2d55;
+
+}
+
+
+/* animation */
+
+@keyframes floatMultiplier{
+
+  0%{
+
+    opacity:1;
+
+    transform:
+      translate(-50%,0px)
+      scale(0.8);
+
+  }
+
+  25%{
+
+    transform:
+      translate(-50%,-18px)
+      scale(1.15);
+
+  }
+
+  100%{
+
+    opacity:0;
+
+    transform:
+      translate(
+        calc(-50% + var(--x)),
+        -70px
+      )
+      scale(0.9);
+
+  }
+
+
+
+}
+
+/* =========================
+FEED BONUS
+========================= */
+
+.feed-bonus{
+
+  color:#00ffe1;
+
+  font-weight:bold;
+
+  text-shadow:
+    0 0 10px rgba(0,255,225,0.8);
+
+  animation:
+    bonusFeedPop 0.4s ease;
+
+}
+
+.feed-rare{
+
+  color:#3ba7ff;
+
+  font-weight:bold;
+
+  text-shadow:
+    0 0 12px rgba(59,167,255,0.9);
+
+  animation:
+    bonusFeedPop 0.4s ease;
+
+}
+
+.feed-epic{
+
+  color:#ffae00;
+
+  font-weight:bold;
+
+  text-shadow:
+    0 0 14px rgba(255,174,0,0.95);
+
+  animation:
+    bonusFeedEpic 0.6s ease;
+
+}
+
+/* animation bonus */
+
+@keyframes bonusFeedPop{
+
+  0%{
+
+    transform:scale(0.9);
+
+    opacity:0;
+
+  }
+
+  100%{
+
+    transform:scale(1);
+
+    opacity:1;
+
+  }
+
+}
+
+@keyframes bonusFeedEpic{
+
+  0%{
+
+    transform:scale(0.75);
+
+    opacity:0;
+
+  }
+
+  40%{
+
+    transform:scale(1.08);
+
+  }
+
+  100%{
+
+    transform:scale(1);
+
+    opacity:1;
+
+  }
+
+}
+
+  0%{
+    transform:scale(1);
+  }
+
+  50%{
+    transform:scale(1.05);
+  }
+
+  100%{
+    transform:scale(1);
+  }
