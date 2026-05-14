@@ -340,10 +340,9 @@ function spawnFloatingMultiplier(multiplier)
       Math.random() * 80
     ) - 40;
 
-  div.style.setProperty(
-    "--x",
-    randomX + "px"
-  );
+div.style.left =
+  (50 + (Math.random()*30 - 15))
+  + "%";
 
   container.appendChild(div);
 
@@ -2206,7 +2205,7 @@ setInterval(
   5000
 );
 
-const GAME_VERSION = "1.1.4";
+const GAME_VERSION = "1.1.6";
 
 const savedVersion =
   localStorage.getItem(

@@ -1258,17 +1258,37 @@ FLOATING MULTIPLIERS
 
   position:absolute;
 
+  left:50%;
+  top:22%;
+
+  transform:
+    translateX(-50%);
+
+  font-size:28px;
+
   font-weight:bold;
 
-  font-size:24px;
+  pointer-events:none;
 
   animation:
-    floatMultiplier 0.9s forwards;
+    floatMultiplier 0.9s ease-out forwards;
 
   text-shadow:
     0 0 12px currentColor;
 
-  white-space:nowrap;
+  z-index:999;
+
+}
+
+@media(max-width:700px){
+
+  .floatingMultiplier{
+
+    top:12%;
+
+    font-size:34px;
+
+  }
 
 }
 
@@ -1303,38 +1323,27 @@ FLOATING MULTIPLIERS
 
 @keyframes floatMultiplier{
 
-  0%{
+  from{
 
     opacity:1;
 
     transform:
-      translate(-50%,0px)
-      scale(0.8);
+      translateX(-50%)
+      translateY(0px)
+      scale(1);
 
   }
 
-  25%{
-
-    transform:
-      translate(-50%,-18px)
-      scale(1.15);
-
-  }
-
-  100%{
+  to{
 
     opacity:0;
 
     transform:
-      translate(
-        calc(-50% + var(--x)),
-        -70px
-      )
-      scale(0.9);
+      translateX(-50%)
+      translateY(-110px)
+      scale(1.45);
 
   }
-
-
 
 }
 
