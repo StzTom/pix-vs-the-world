@@ -102,6 +102,10 @@ let playerBonusEndsAt = null;
 
 let nextBonusAt = null;
 
+let isKing = false;
+
+let rerollUsedToday = false;
+
 function getFinalMultiplier()
 {
 
@@ -335,11 +339,6 @@ function spawnFloatingMultiplier(multiplier)
 
   // variation horizontale
 
-  const randomX =
-    Math.floor(
-      Math.random() * 80
-    ) - 40;
-
 div.style.left =
   (50 + (Math.random()*30 - 15))
   + "%";
@@ -351,6 +350,33 @@ div.style.left =
     div.remove();
 
   },900);
+
+}
+
+function spawnPixDamage()
+{
+
+  const pixScore =
+    document.getElementById(
+      "pixScore"
+    );
+
+  const div =
+    document.createElement("div");
+
+  div.classList.add(
+    "pixDamage"
+  );
+
+  div.innerText = "-1";
+
+  pixScore.appendChild(div);
+
+  setTimeout(() => {
+
+    div.remove();
+
+  },800);
 
 }
 
@@ -885,6 +911,11 @@ else{
 
 }
 
+rerollUsedToday =
+  data.reroll_used_today;
+
+updateKingButton();
+
 }
 
 async function loadGame() {
@@ -1407,6 +1438,7 @@ async function clickPixel(){
 
 }
 
+
   if(gameEnded) return;
 
   // animation choc
@@ -1480,9 +1512,22 @@ else{
 const finalMultiplier =
   getFinalMultiplier();
 
+  let kingDamage = 0;
+
+if(isKing){
+
+  kingDamage = 1;
+
+}
   spawnFloatingMultiplier(
   finalMultiplier
 );
+
+if(isKing){
+
+  spawnPixDamage();
+
+}
 
 localClicks += finalMultiplier;
 
@@ -1533,8 +1578,12 @@ const {
 } = await client.rpc(
   "process_click",
   {
-    click_amount: finalMultiplier,
-    vulnerable_pix: vulnerablePix
+    click_amount:
+  finalMultiplier,
+   vulnerable_pix: vulnerablePix,
+
+  king_damage:
+  isKing ? 1 : 0
   }
 );
 
@@ -2001,6 +2050,118 @@ const rareMessages = [
 
 ];
 
+function updateKingButton()
+{
+
+  const button =
+    document.getElementById(
+      "kingRerollButton"
+    );
+
+  if(
+    isKing
+    &&
+    rewardClaimed
+    &&
+    !activeBonus
+    &&
+    !rerollUsedToday
+  ){
+
+    button.style.display =
+      "block";
+
+  }
+  else{
+
+    button.style.display =
+      "none";
+
+  }
+
+}
+
+const rerollRewards = [
+
+  {
+    goal:25000,
+    reward:"BOOST X2 — 1H"
+  },
+
+  {
+    goal:50000,
+    reward:"BOOST X3 — 15MIN"
+  },
+
+  {
+    goal:75000,
+    reward:"RAGE DU MONDE — 10MIN"
+  }
+
+];
+
+async function rerollWorldObjective()
+{
+
+  if(
+    !isKing
+    ||
+    rerollUsedToday
+  ){
+    return;
+  }
+
+  const randomReward =
+    rerollRewards[
+      Math.floor(
+        Math.random() *
+        rerollRewards.length
+      )
+    ];
+
+  await client
+    .from("daily_objective")
+    .update({
+
+      daily_clicks:0,
+
+      daily_goal:
+        randomReward.goal,
+
+      reward_name:
+        randomReward.reward,
+
+      reward_claimed:false,
+
+      active_bonus:null,
+
+      bonus_ends_at:null,
+
+      reroll_used_today:true
+
+    })
+    .eq("id",1);
+
+  rerollUsedToday = true;
+
+  addFeedMessage(
+    "👑 Le Roi relance l'offensive.",
+    "epic"
+  );
+
+  await loadDailyObjective();
+
+}
+
+document
+  .getElementById(
+    "kingRerollButton"
+  )
+  .addEventListener(
+    "click",
+    rerollWorldObjective
+  );
+
 async function loadLeaderboard(){
 
  const { data } = await client
@@ -2024,31 +2185,52 @@ async function loadLeaderboard(){
 
   data.forEach((player,index) => {
 
+  const isLeader = index === 0;
+
     container.innerHTML += `
 
-      <div class="leaderboardPlayer">
+  <div class="leaderboardPlayer">
 
-        <div>
+    <div class="${
+      isLeader
+      ? "leaderboardKing"
+      : ""
+    }">
 
-          <span class="leaderboardRank">
-            #${index + 1}
-          </span>
+      <span class="leaderboardRank">
+        #${index + 1}
+      </span>
 
-          ${player.pseudo}
+      ${
+        isLeader
+        ? "👑 "
+        : ""
+      }
 
-        </div>
+      ${player.pseudo}
 
-        <div class="leaderboardClicks">
+    </div>
 
-          ${player.total_clicks} clics
+    <div class="leaderboardClicks">
 
-        </div>
+      ${player.total_clicks} clics
 
-      </div>
+    </div>
+
+  </div>
 
     `;
 
   });
+
+  if(data.length > 0){
+
+  isKing =
+    data[0].pseudo === playerPseudo;
+
+  updateKingButton();
+
+}
 
 }
 

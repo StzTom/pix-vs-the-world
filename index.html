@@ -2,13 +2,36 @@
 <html>
 
 <head>
+<script>
+
+const VERSION = "1.1.6";
+
+const currentVersion =
+  localStorage.getItem(
+    "pix_html_version"
+  );
+
+if(currentVersion !== VERSION){
+
+  localStorage.setItem(
+    "pix_html_version",
+    VERSION
+  );
+
+  window.location.href =
+    window.location.pathname +
+    "?v=" + VERSION;
+
+}
+
+</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport"
 content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<link rel="stylesheet" href="style.css?v=1.1.5">
+<link rel="stylesheet" href="style.css?v=1.1.6">
   <title>Pix vs The World</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
@@ -95,6 +118,9 @@ content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable
   RÉCOMPENSE : BOOST X2 — 1H
 </div>
 
+    <button id="kingRerollButton">
+  👑 RELANCER L'OFFENSIVE
+</button>
 </div>
 
 <div id="contribution">
@@ -157,7 +183,7 @@ content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable
 
 <div id="gameMessage"></div>
 
-<script src="script.js?v=1.1.5"></script>
+<script src="script.js?v=1.1.6"></script>
 
 </body>
 </html>
