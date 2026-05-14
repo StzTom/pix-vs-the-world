@@ -23,38 +23,52 @@ const client = supabase.createClient(
   SUPABASE_KEY
 );
 
+function isValidUUID(uuid){
+
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    .test(uuid);
+
+}
+
 let playerId =
   localStorage.getItem(
     "pix_player_id"
   );
 
-if(!playerId){
+// ancien format détecté
 
-  if(
-    window.crypto
-    &&
-    crypto.randomUUID
-  ){
+if(
+  !playerId
+  ||
+  !isValidUUID(playerId)
+){
 
-    playerId =
-      crypto.randomUUID();
+  const oldPlayerId =
+    playerId;
 
-  }
-  else{
-
-    playerId =
-      Date.now().toString()
-      +
-      Math.random()
-      .toString(36)
-      .substring(2);
-
-  }
+  playerId =
+    crypto.randomUUID();
 
   localStorage.setItem(
     "pix_player_id",
     playerId
   );
+
+  console.log(
+    "NEW PLAYER UUID:",
+    playerId
+  );
+
+  // migration auto des anciennes données
+
+  if(oldPlayerId){
+
+    localStorage.setItem(
+      "pix_old_player_id",
+      oldPlayerId
+    );
+
+  }
 
 }
 
@@ -78,7 +92,7 @@ let currentReward = "";
 
 let communityNames = [];
 
-let localClicks = null;
+let localClicks = 0;
 
 if(localClicks === 10){
 
@@ -158,51 +172,76 @@ function updateContribution(){
 
 async function loadDailyObjective(){
 
-const { data: updatedClicks, error } =
-  await client.rpc(
-    "increment_player_clicks",
-    {
-      player_uuid: playerId,
-      click_value: clickMultiplier
-    }
-  );
+  const { data } = await client
+    .from("daily_objective")
+    .select("*")
+    .eq("id",1)
+    .single();
 
-console.log(
-  "PLAYER ID:",
-  playerId
-);
+  if(!data) return;
 
-console.log(
-  "UPDATED CLICKS:",
-  updatedClicks
-);
+  dailyClicks = data.daily_clicks;
+  dailyGoal = data.daily_goal;
 
-console.log(
-  "RPC ERROR:",
-  error
-);
+  currentReward = data.reward_name;
 
-  if(
-    activeBonus ===
-    "BOOST X2 — 1H"
-  ){
+  activeBonus = data.active_bonus;
+
+  bonusEndsAt = data.bonus_ends_at;
+
+  rewardClaimed = data.reward_claimed;
+
+  clickMultiplier = 1;
+
+  if(activeBonus === "BOOST X2 — 1H"){
     clickMultiplier = 2;
   }
 
-  if(
-    activeBonus ===
-    "BOOST X3 — 15MIN"
-  ){
+  if(activeBonus === "BOOST X3 — 15MIN"){
     clickMultiplier = 3;
   }
 
-  if(
-    activeBonus ===
-    "RAGE DU MONDE — 10MIN"
-  ){
+  if(activeBonus === "RAGE DU MONDE — 10MIN"){
     clickMultiplier = 2;
   }
 
+  const displayClicks =
+    Math.min(
+      dailyClicks,
+      dailyGoal
+    );
+
+  document.getElementById(
+    "dailyProgress"
+  ).innerText =
+    displayClicks +
+    " / " +
+    dailyGoal;
+
+  const rewardElement =
+    document.getElementById(
+      "dailyReward"
+    );
+
+  if(
+    rewardClaimed
+    &&
+    !activeBonus
+  ){
+
+    rewardElement.innerText =
+      "RÉCOMPENSE TERMINÉE";
+
+  }
+  else{
+
+    rewardElement.innerText =
+      "RÉCOMPENSE : " +
+      currentReward;
+
+  }
+
+}
   // affichage progression
 
   const displayClicks =
@@ -238,14 +277,23 @@ console.log(
 
   }
 
-if(!activeBonus){
+if(
+  rewardClaimed
+  &&
+  !activeBonus
+){
 
-  if(rewardClaimed){
+  rewardElement.innerText =
+    "RÉCOMPENSE TERMINÉE";
 
-    rewardElement.innerText =
-      "RÉCOMPENSE TERMINÉE";
+}
+else if(!activeBonus){
 
-  }
+  rewardElement.innerText =
+    "RÉCOMPENSE : " +
+    currentReward;
+
+}
   else{
 
     rewardElement.innerText =
@@ -253,10 +301,6 @@ if(!activeBonus){
       currentReward;
 
   }
-
-}
-
-}
 
 async function loadGame() {
 
@@ -429,26 +473,99 @@ else{
 
 async function loadPlayerClicks(){
 
-  const { data } =
+  const { data, error: playerError } =
     await client
       .from("players")
       .select("total_clicks")
       .eq("id", playerId)
       .maybeSingle();
-      
+
   console.log(
-  "LOADED PLAYER CLICKS:",
-  data
+    "PLAYER DATA:",
+    data
+  );
+
+console.log(
+  "PLAYER ERROR FULL:",
+  playerError
 );
+if(data){
 
-  if(data){
+  localClicks =
+    data.total_clicks || 0;
 
-    localClicks =
-      data.total_clicks || 0;
+}
+else{
 
-    updateContribution();
+  // joueur introuvable
+  // on recrée automatiquement
+  // sa ligne Supabase
+
+  const pseudo =
+    localStorage.getItem(
+      "pix_pseudo"
+    );
+
+  if(pseudo){
+
+    const {
+      data: existingPseudo
+    } = await client
+      .from("players")
+      .select("id,total_clicks")
+      .eq("pseudo", pseudo)
+      .maybeSingle();
+
+    // pseudo déjà existant
+    // on récupère son vrai compte
+
+    if(existingPseudo){
+
+      playerId =
+        existingPseudo.id;
+
+      localStorage.setItem(
+        "pix_player_id",
+        playerId
+      );
+
+      localClicks =
+        existingPseudo.total_clicks || 0;
+
+    }
+    else{
+
+      // recréation complète
+
+      await client
+        .from("players")
+        .insert({
+
+          id: playerId,
+
+          pseudo: pseudo,
+
+          total_clicks: 0,
+
+          updated_at:
+            new Date().toISOString()
+
+        });
+
+      localClicks = 0;
+
+    }
 
   }
+  else{
+
+    localClicks = 0;
+
+  }
+
+}
+
+  updateContribution();
 
 }
 // =========================
@@ -756,43 +873,38 @@ else{
 
 }
 
-  // backend
+// backend
+
 localClicks += clickMultiplier;
 
 updateContribution();
-  
-const { data, error } =
-  await client.rpc(
-    "process_click",
-    {
-      click_amount:
-        clickMultiplier,
 
-      vulnerable_pix:
-        vulnerablePix
-    }
-  );
+const vulnerablePix =
+  activeBonus ===
+  "PIX VULNÉRABLE — 30MIN";
 
-console.log(
-  "PROCESS CLICK:",
-  data
+// joueur
+
+const {
+  data: updatedClicks,
+  error: playerError
+} = await client.rpc(
+  "increment_player_clicks",
+  {
+    player_uuid: playerId,
+    click_value: clickMultiplier
+  }
 );
 
 console.log(
-  "PROCESS ERROR:",
-  error
+  "UPDATED CLICKS:",
+  updatedClicks
 );
 
-  await client.rpc(
-    "increment_player_clicks",
-    {
-
-      player_uuid: playerId,
-
-      click_value: clickMultiplier
-
-    }
-  );
+console.log(
+  "PLAYER ERROR FULL:",
+  JSON.stringify(playerError)
+);
 
 if(updatedClicks !== null){
 
@@ -802,29 +914,41 @@ if(updatedClicks !== null){
 
 }
 
-const vulnerablePix =
-  activeBonus ===
-  "PIX VULNÉRABLE — 30MIN";
+await loadLeaderboard();
 
-const { data } =
-  await client.rpc(
-    "process_click",
-    {
+// monde
 
-      click_amount:
-        clickMultiplier,
+const {
+  data: processData,
+  error: processError
+} = await client.rpc(
+  "process_click",
+  {
+    click_amount: clickMultiplier,
+    vulnerable_pix: vulnerablePix
+  }
+);
 
-      vulnerable_pix:
-        vulnerablePix
+console.log(
+  "PROCESS DATA:",
+  processData
+);
 
-    }
-  );
+console.log(
+  "SYNC ERROR FULL:",
+  JSON.stringify(Error)
+);
 
-// sync instant frontend
+// sync ui
 
-if(data && data.length > 0){
+if(
+  processData
+  &&
+  processData.length > 0
+){
 
-  const clickData = data[0];
+  const clickData =
+    processData[0];
 
   document.getElementById("world")
     .innerText =
@@ -845,6 +969,18 @@ if(data && data.length > 0){
 
   rewardClaimed =
     clickData.returned_reward_claimed;
+
+  // refresh objectif
+
+  document.getElementById(
+    "dailyProgress"
+  ).innerText =
+    Math.min(
+      dailyClicks,
+      dailyGoal
+    )
+    + " / "
+    + dailyGoal;
 
 }
 
@@ -1033,24 +1169,24 @@ pseudo =
 await client
   .from("players")
   .upsert({
-
     id: playerId,
-
     pseudo: playerPseudo,
-
-    total_clicks: localClicks,
-
+    total_clicks: 0,
     updated_at:
       new Date().toISOString()
-
-  },
-  {
-    onConflict:"id"
   });
+
+await client
+  .from("players")
+  .update({
+    pseudo: playerPseudo,
+    updated_at:
+      new Date().toISOString()
+  })
+  .eq("id", playerId);
 
 overlay.style.display = "none";
 
-updateContribution();
 
 if(
   oldPseudo
@@ -1077,29 +1213,43 @@ else{
 
 });
 
-async function syncPlayerData(){
+async function migrateOldPlayerData(){
 
-  const pseudo =
+  const oldPlayerId =
     localStorage.getItem(
-      "pix_pseudo"
+      "pix_old_player_id"
     );
 
-  if(!pseudo){
+  if(!oldPlayerId){
     return;
   }
 
-const clicks = 0;
+  console.log(
+    "MIGRATING OLD PLAYER:",
+    oldPlayerId
+  );
 
-  const { data: existingPlayer } =
-    await client
-      .from("players")
-      .select("id")
-      .eq("id", playerId)
-      .maybeSingle();
+  // récupérer ancien joueur
 
-  if(existingPlayer){
+  const {
+    data: oldPlayer
+  } = await client
+    .from("players")
+    .select("*")
+    .eq("id", oldPlayerId)
+    .maybeSingle();
+
+  if(!oldPlayer){
+
+    localStorage.removeItem(
+      "pix_old_player_id"
+    );
+
     return;
+
   }
+
+  // copier vers nouveau uuid
 
   await client
     .from("players")
@@ -1107,23 +1257,29 @@ const clicks = 0;
 
       id: playerId,
 
-      pseudo: pseudo,
+      pseudo: oldPlayer.pseudo,
 
-      total_clicks: clicks,
+      total_clicks:
+        oldPlayer.total_clicks,
 
       updated_at:
         new Date().toISOString()
 
     });
 
-  addFeedMessage(
-    pseudo +
-    " rejoint le classement."
+  console.log(
+    "PLAYER MIGRATED"
+  );
+
+  localStorage.removeItem(
+    "pix_old_player_id"
   );
 
 }
 
-async function loadCommunityNames(){
+
+async function loadCommunityNames()
+{
 
   const { data } = await client
     .from("players")
@@ -1412,19 +1568,17 @@ setInterval(
 
 async function initGame(){
 
+  await migrateLocalClicks();
+
   await loadPlayerClicks();
 
-  await syncPlayerData();
-
-  await migrateLocalClicks();
+  updateContribution();
 
   await loadDailyObjective();
 
   await loadGame();
 
   await loadLeaderboard();
-
-  updateContribution();
 
 }
 
