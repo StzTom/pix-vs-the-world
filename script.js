@@ -911,9 +911,6 @@ else{
 
 }
 
-rerollUsedToday =
-  data.reroll_used_today;
-
 updateKingButton();
 
 }
@@ -1323,22 +1320,25 @@ else{
 
   // bonus terminé
 
-  if(distance <= 0){
+ if(distance <= 0){
 
 rewardElement.innerText =
-  "RÉCOMPENSE TERMINÉE";
+"RÉCOMPENSE TERMINÉE";
 
-  activeBonus = null;
+activeBonus = null;
 
-  bonusEndsAt = null;
+bonusEndsAt = null;
 
-  clickMultiplier = 1;
+clickMultiplier = 1;
 
-rewardElement.innerText = "RÉCOMPENSE TERMINÉE";    
+rewardClaimed = true;
 
-  return;
+updateKingButton();
+
+return;
 
 }
+
 
   const hours =
     Math.floor(
@@ -2053,33 +2053,29 @@ const rareMessages = [
 function updateKingButton()
 {
 
-  const button =
-    document.getElementById(
-      "kingRerollButton"
-    );
+const button =
+document.getElementById(
+"kingRerollButton"
+);
 
-  if(
-    isKing
-    &&
-    rewardClaimed
-    &&
-    !activeBonus
-    &&
-    !rerollUsedToday
-  ){
+if(
+isKing &&
+rewardClaimed &&
+!activeBonus
+){
 
-    button.style.display =
-      "block";
-
-  }
-  else{
-
-    button.style.display =
-      "none";
-
-  }
+button.style.display = "block";
 
 }
+else{
+
+
+button.style.display = "none";
+
+}
+
+}
+
 
 const rerollRewards = [
 
@@ -2105,8 +2101,6 @@ async function rerollWorldObjective()
 
   if(
     !isKing
-    ||
-    rerollUsedToday
   ){
     return;
   }
@@ -2137,12 +2131,8 @@ async function rerollWorldObjective()
 
       bonus_ends_at:null,
 
-      reroll_used_today:true
-
     })
     .eq("id",1);
-
-  rerollUsedToday = true;
 
   addFeedMessage(
     "👑 Le Roi relance l'offensive.",
@@ -2166,7 +2156,7 @@ async function loadLeaderboard(){
 
  const { data } = await client
   .from("players")
-  .select("pseudo,total_clicks")
+  .select("id,pseudo,total_clicks")
   .not("pseudo","is",null)
   .order(
     "total_clicks",
@@ -2223,12 +2213,19 @@ async function loadLeaderboard(){
 
   });
 
-  if(data.length > 0){
+if(data.length > 0){
 
-  isKing =
-    data[0].pseudo === playerPseudo;
+isKing =
+data[0].id === playerId;
 
-  updateKingButton();
+console.log(
+"KING CHECK",
+isKing,
+data[0].id,
+playerId
+);
+
+updateKingButton();
 
 }
 
@@ -2387,7 +2384,7 @@ setInterval(
   5000
 );
 
-const GAME_VERSION = "1.1.6";
+const GAME_VERSION = "1.1.8";
 
 const savedVersion =
   localStorage.getItem(
